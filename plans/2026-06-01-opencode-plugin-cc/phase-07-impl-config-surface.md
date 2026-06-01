@@ -217,17 +217,24 @@ Same pattern cho `oc-result.md`.
 
 ### 6. `hooks/hooks.json` + `hooks/ensure-opencode.mjs`
 
-`hooks.json`:
+`hooks.json` (CORRECTED — `hooks` is a **record** keyed by event name, NOT an array; matches Claude Code settings.json hook schema. Initial array form failed plugin load with `expected record, received array`):
 
 ```json
 {
-  "hooks": [
-    {
-      "event": "SessionStart",
-      "command": "node ${PLUGIN_DIR}/hooks/ensure-opencode.mjs",
-      "blocking": false
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-opencode.mjs\"",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 

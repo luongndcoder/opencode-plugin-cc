@@ -1,9 +1,16 @@
 {
-  "hooks": [
-    {
-      "event": "SessionStart",
-      "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/ensure-opencode.mjs",
-      "blocking": false
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-opencode.mjs\"",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
 }
