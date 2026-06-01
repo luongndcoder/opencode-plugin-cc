@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+plans/*/trace.jsonl
+plans/*/pilot-results.md
+coverage/
+*.log
+.idea/
+.vscode/
+*.swp

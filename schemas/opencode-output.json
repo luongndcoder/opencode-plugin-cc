@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpencodeOutput",
+  "description": "Schema for `opencode run --format json` output. Permissive — additionalProperties allowed since anomalyco schema may evolve.",
+  "type": "object",
+  "required": ["session_id", "status"],
+  "properties": {
+    "session_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "failed", "aborted", "running"] },
+    "result": {
+      "type": ["object", "null"],
+      "properties": {
+        "diff": { "type": ["string", "null"] },
+        "files_changed": { "type": "array", "items": { "type": "string" } },
+        "model_used": { "type": ["string", "null"] },
+        "tokens_used": { "type": ["integer", "null"] },
+        "message": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "error": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

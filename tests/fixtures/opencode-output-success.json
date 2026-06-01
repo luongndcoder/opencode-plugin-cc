@@ -1,0 +1,12 @@
+{
+  "session_id": "ses_abc123",
+  "status": "completed",
+  "result": {
+    "diff": "--- a/src/hello.js\n+++ b/src/hello.js\n@@ -0,0 +1,3 @@\n+export function hello() {\n+  return 'world'\n+}\n",
+    "files_changed": ["src/hello.js"],
+    "model_used": "groq/llama-3.1-70b-versatile",
+    "tokens_used": 1234,
+    "message": "Added hello function"
+  },
+  "error": null
+}

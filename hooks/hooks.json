@@ -1,0 +1,9 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/ensure-opencode.mjs",
+      "blocking": false
+    }
+  ]
+}

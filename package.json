@@ -1,0 +1,17 @@
+{
+  "name": "opencode-plugin-cc",
+  "version": "0.1.0",
+  "description": "Claude Code plugin orchestrating anomalyco/opencode",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "node --test 'tests/**/*.test.mjs'",
+    "test:coverage": "node --test --experimental-test-coverage 'tests/**/*.test.mjs'"
+  },
+  "dependencies": {
+    "ajv": "^8.12.0"
+  }
+}

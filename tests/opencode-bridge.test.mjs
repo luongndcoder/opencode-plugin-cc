@@ -1,0 +1,92 @@
+import { test, mock } from 'node:test'
+import assert from 'node:assert/strict'
+import { Readable } from 'node:stream'
+import { EventEmitter } from 'node:events'
+import { invoke } from '../scripts/opencode-bridge.mjs'
+
+function makeFakeChild({ stdout = '', stderr = '', exitCode = 0, signal = null, neverEmits = false } = {}) {
+  const child = new EventEmitter()
+  child.stdout = neverEmits ? new Readable({ read() {} }) : Readable.from([stdout])
+  child.stderr = neverEmits ? new Readable({ read() {} }) : Readable.from([stderr])
+  child.kill = mock.fn()
+  if (!neverEmits) {
+    queueMicrotask(() => child.emit('close', exitCode, signal))
+  }
+  return child
+}
+
+function fakeSpawn(opts = {}) {
+  return mock.fn(() => makeFakeChild(opts))
+}
+
+test('invoke: happy path returns parsed JSON', async () => {
+  const stdout = JSON.stringify({ session_id: 's1', status: 'completed', result: { diff: 'd' } })
+  const spawn = fakeSpawn({ stdout })
+  const out = await invoke({ prompt: 'hello', cwd: '/tmp', spawn })
+  assert.equal(out.session_id, 's1')
+  assert.equal(out.status, 'completed')
+  assert.equal(out.result.diff, 'd')
+})
+
+test('invoke: malformed stdout throws OpencodeOutputError', async () => {
+  const spawn = fakeSpawn({ stdout: 'this is not json' })
+  await assert.rejects(
+    () => invoke({ prompt: 'x', cwd: '/tmp', spawn }),
+    (err) => err.name === 'OpencodeOutputError',
+  )
+})
+
+test('invoke: exit != 0 throws OpencodeProcessError with stderr', async () => {
+  const spawn = fakeSpawn({ exitCode: 1, stderr: 'boom from opencode' })
+  await assert.rejects(
+    () => invoke({ prompt: 'x', cwd: '/tmp', spawn }),
+    (err) => err.name === 'OpencodeProcessError' && /boom from opencode/.test(err.message),
+  )
+})
+
+test('invoke: timeout kills child + throws OpencodeTimeoutError', async () => {
+  const child = makeFakeChild({ neverEmits: true })
+  const spawn = mock.fn(() => child)
+  const p = invoke({ prompt: 'x', cwd: '/tmp', spawn, timeoutMs: 50 })
+  await assert.rejects(p, (err) => err.name === 'OpencodeTimeoutError')
+  assert.equal(child.kill.mock.calls.length, 1)
+})
+
+test('invoke: spawn ENOENT throws OpencodeNotInstalledError with install link', async () => {
+  const spawn = mock.fn(() => {
+    const e = new Error('spawn opencode ENOENT')
+    e.code = 'ENOENT'
+    throw e
+  })
+  await assert.rejects(
+    () => invoke({ prompt: 'x', cwd: '/tmp', spawn }),
+    (err) => err.name === 'OpencodeNotInstalledError' && /anomalyco\/opencode/.test(err.message),
+  )
+})
+
+test('invoke: forbids --format json + --command combo (anomalyco bug #2923)', async () => {
+  const spawn = fakeSpawn()
+  await assert.rejects(
+    () => invoke({ prompt: 'x', cwd: '/tmp', spawn, command: 'foo' }),
+    /must not combine --format json and --command/,
+  )
+})
+
+test('invoke: builds CLI args correctly (--dir, --agent, --format json, prompt positional)', async () => {
+  const stdout = JSON.stringify({ session_id: 's1', status: 'completed' })
+  const spawn = fakeSpawn({ stdout })
+  await invoke({ prompt: 'do thing', cwd: '/repo', model: 'free', agent: 'build', spawn })
+  const call = spawn.mock.calls[0]
+  assert.equal(call.arguments[0], 'opencode')
+  const args = call.arguments[1]
+  assert.equal(args[0], 'run')
+  assert.ok(args.includes('--dir'))
+  assert.ok(args.includes('/repo'))
+  assert.ok(args.includes('--format'))
+  assert.ok(args.includes('json'))
+  assert.ok(args.includes('--model'))
+  assert.ok(args.includes('free'))
+  assert.ok(args.includes('--agent'))
+  assert.ok(args.includes('build'))
+  assert.equal(args[args.length - 1], 'do thing', 'prompt must be positional at end')
+})
