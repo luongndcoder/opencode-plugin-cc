@@ -41,6 +41,8 @@ export async function run({
   reviewer = null,
   onTrace = () => {},
   maxRetry = MAX_RETRY,
+  signal,
+  timeoutMs,
 }) {
   const traceId = randomUUID()
   const history = []
@@ -49,7 +51,7 @@ export async function run({
   for (let attempt = 1; attempt <= maxRetry + 1; attempt++) {
     const t0 = Date.now()
     try {
-      const result = await invoke({ prompt: currentPrompt, cwd, model, agent })
+      const result = await invoke({ prompt: currentPrompt, cwd, model, agent, signal, timeoutMs })
 
       let reviewerVerdict = null
       if (reviewer && result?.result?.diff) {

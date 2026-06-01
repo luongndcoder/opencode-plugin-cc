@@ -52,6 +52,7 @@ node --test tests/*.test.mjs # 22/22 unit tests should pass
 | `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
 | `/oc-exec`    | Delegate one or all planned tasks to OpenCode, with reviewer + retry gate     |
 | `/oc-verify`  | Run repo's test + lint after `/oc-exec`; re-delegate on failure if you choose |
+| `/oc-cancel`  | Cancel the currently-running `/oc-exec` via PID file in cwd                   |
 | `/oc-status`  | (v2 placeholder) Background job polling                                       |
 | `/oc-result`  | (v2 placeholder) Fetch background job result                                  |
 
@@ -131,6 +132,9 @@ Key constraints:
 | `OpencodeOutputError: schema mismatch`            | OpenCode version bumped, schema changed. Update `schemas/opencode-output.json`.   |
 | `OpencodeTimeoutError`                            | Task too slow (>5min default). Split task with `/oc-plan` or extend `--max-retry` |
 | `RetryExhaustedError`                             | Free model couldn't satisfy reviewer. Check `trace.jsonl`. Switch model.          |
+| `/oc-exec` stuck / too slow                       | Press Esc in CC (sends SIGINT → exit 130) OR run `/oc-cancel` in another CC session. Use `--timeout <ms>` to set hard cap. |
+| `/oc-cancel` says "no active task"                | PID file `<cwd>/.opencode-plugin/active.pid` missing — nothing to cancel.        |
+| Stale PID file                                    | `/oc-cancel` auto-cleans stale PIDs (verifies process alive first).               |
 | Reviewer always fails with "uncertain"            | Add Mobio CLAUDE.md / better repo context. Or simplify task.                       |
 | `node --test` says module not found               | Run `npm install`, ensure Node ≥ 20.                                              |
 

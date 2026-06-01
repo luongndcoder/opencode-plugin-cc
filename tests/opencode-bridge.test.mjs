@@ -72,6 +72,37 @@ test('invoke: forbids --format json + --command combo (anomalyco bug #2923)', as
   )
 })
 
+test('invoke: pre-aborted signal throws OpencodeAbortedError, spawn NOT called', async () => {
+  const spawn = mock.fn()
+  const ac = new AbortController()
+  ac.abort()
+  await assert.rejects(
+    () => invoke({ prompt: 'x', cwd: '/tmp', spawn, signal: ac.signal }),
+    (err) => err.name === 'OpencodeAbortedError',
+  )
+  assert.equal(spawn.mock.calls.length, 0)
+})
+
+test('invoke: abort during run kills child + throws OpencodeAbortedError', async () => {
+  const child = makeFakeChild({ neverEmits: true })
+  const spawn = mock.fn(() => child)
+  const ac = new AbortController()
+  const p = invoke({ prompt: 'x', cwd: '/tmp', spawn, signal: ac.signal, timeoutMs: 500 })
+  setTimeout(() => ac.abort(), 30)
+  await assert.rejects(p, (err) => err.name === 'OpencodeAbortedError')
+  assert.equal(child.kill.mock.calls.length, 1)
+})
+
+test('invoke: completion cleans abort listener (no leak after success)', async () => {
+  const stdout = JSON.stringify({ session_id: 's1', status: 'completed' })
+  const spawn = fakeSpawn({ stdout })
+  const ac = new AbortController()
+  await invoke({ prompt: 'x', cwd: '/tmp', spawn, signal: ac.signal })
+  // Aborting after completion must not throw or interfere
+  ac.abort()
+  assert.equal(ac.signal.aborted, true)
+})
+
 test('invoke: builds CLI args correctly (--dir, --agent, --format json, prompt positional)', async () => {
   const stdout = JSON.stringify({ session_id: 's1', status: 'completed' })
   const spawn = fakeSpawn({ stdout })

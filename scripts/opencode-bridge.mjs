@@ -32,6 +32,13 @@ export class OpencodeNotInstalledError extends Error {
   }
 }
 
+export class OpencodeAbortedError extends Error {
+  constructor(message = 'opencode invocation aborted') {
+    super(message)
+    this.name = 'OpencodeAbortedError'
+  }
+}
+
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000
 
 const INSTALL_HINT =
@@ -53,6 +60,7 @@ export async function invoke({
   command,
   spawn = defaultSpawn,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  signal,
 }) {
   if (command !== undefined && command !== null) {
     throw new Error(
@@ -64,6 +72,11 @@ export async function invoke({
   }
   if (!cwd || typeof cwd !== 'string') {
     throw new Error('invoke: `cwd` is required (string)')
+  }
+
+  // Pre-check: signal already aborted → bail before spawn
+  if (signal?.aborted) {
+    throw new OpencodeAbortedError('aborted before spawn')
   }
 
   const args = buildArgs({ cwd, model, agent, prompt })
@@ -89,6 +102,21 @@ export async function invoke({
       reject(new OpencodeTimeoutError(`opencode timed out after ${timeoutMs}ms`))
     }, timeoutMs)
   })
+
+  let abortListener
+  const abortPromise = signal
+    ? new Promise((_, reject) => {
+        abortListener = () => {
+          try {
+            child.kill('SIGTERM')
+          } catch {
+            // ignore
+          }
+          reject(new OpencodeAbortedError('aborted during run'))
+        }
+        signal.addEventListener('abort', abortListener, { once: true })
+      })
+    : new Promise(() => {}) // never resolves
 
   const runPromise = (async () => {
     const stdoutP = readAll(child.stdout)
@@ -123,8 +151,11 @@ export async function invoke({
   })()
 
   try {
-    return await Promise.race([runPromise, timeoutPromise])
+    return await Promise.race([runPromise, timeoutPromise, abortPromise])
   } finally {
     clearTimeout(timeoutHandle)
+    if (signal && abortListener) {
+      signal.removeEventListener('abort', abortListener)
+    }
   }
 }
