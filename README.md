@@ -141,11 +141,9 @@ Key constraints:
 ## Development
 
 ```bash
-npm test                  # 22 unit tests (node:test)
+npm test                  # 30 unit tests (node:test)
 npm run test:coverage     # coverage report (experimental)
 ```
-
-See `plans/2026-06-01-opencode-plugin-cc/` for the design notes (brainstorm, plan, phase files, research).
 
 ## License
 
