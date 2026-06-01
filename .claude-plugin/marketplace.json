@@ -1,0 +1,25 @@
+{
+  "name": "luongndcoder",
+  "owner": {
+    "name": "luongnd",
+    "email": "luongnd@mobio.io"
+  },
+  "description": "Self-hosted marketplace for opencode-plugin-cc — Claude Code orchestrating anomalyco/opencode with free models",
+  "plugins": [
+    {
+      "name": "opencode-plugin-cc",
+      "source": "./",
+      "description": "CC plans + reviews, OpenCode executes tasks with free models (Ollama / Groq / OpenRouter / DeepSeek). Plan → exec → verify with reviewer + retry + cancel.",
+      "version": "0.1.1",
+      "author": {
+        "name": "luongnd",
+        "email": "luongnd@mobio.io"
+      },
+      "homepage": "https://github.com/luongndcoder/opencode-plugin-cc",
+      "repository": "https://github.com/luongndcoder/opencode-plugin-cc",
+      "license": "MIT",
+      "keywords": ["claude-code", "opencode", "ai-agent", "code-generation", "cost-optimization"],
+      "category": "development"
+    }
+  ]
+}
