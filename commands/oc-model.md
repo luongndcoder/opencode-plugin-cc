@@ -1,41 +1,47 @@
 ---
-description: List currently-free opencode models and let the user pick which one /oc-exec uses. Saves the choice per project.
+description: List opencode models (free + paid OpenCode Zen) and let the user pick which one /oc-exec uses. Saves the choice per project.
 ---
 
-# /oc-model — Choose the free model
+# /oc-model — Choose the executor model
 
-OpenCode có nhiều free model với **chất lượng khác nhau**. Lệnh này liệt kê model đang free và để user chọn; lựa chọn được lưu vào `<cwd>/.opencode-plugin/config.json` và dùng cho mọi `/opencode-plugin-cc:oc-exec` sau đó.
+OpenCode có **free model** (chất lượng khác nhau) và **paid model (OpenCode Zen)** rẻ + chất lượng cao hơn. Lệnh này liệt kê model + cost để user chọn; lựa chọn lưu vào `<cwd>/.opencode-plugin/config.json` và dùng cho mọi `/opencode-plugin-cc:oc-exec` sau đó.
 
-> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng `/opencode-plugin-cc:oc-*`. Bare `/oc-*` không hợp lệ.
+> Định hướng: **Claude (Pro) plan → OpenCode (Zen) execute**. Vì Zen rất rẻ nên có thể dùng paid model để execute mà tổng chi phí vẫn thấp hơn nhiều so với để Claude tự code.
+>
+> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng `/opencode-plugin-cc:oc-*`.
 
 ## Flow
 
-1. **List free models** — Bash:
+1. **List models** — Bash:
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/model-selector.mjs" --list
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/model-selector.mjs" --list --all
    ```
-   Trả JSON `{ models: [{ id, context, toolcall }] }` (đã sort: tốt nhất trước).
-   - exit 3 / `OpencodeNotInstalledError` → opencode chưa cài → gợi ý `/opencode-plugin-cc:oc-install`, STOP.
-   - `models` rỗng → "Không có free model nào trên opencode hiện tại. Cấu hình provider hoặc đăng nhập opencode." STOP.
+   Trả JSON `{ includes_paid: true, models: [{ id, input, output, free, context, toolcall }] }`.
+   Sort: free trước (tốt nhất trước), rồi paid (rẻ nhất trước). `input`/`output` = giá opencode (USD / 1M tokens).
+   - exit 3 / `OpencodeNotInstalledError` → gợi ý `/opencode-plugin-cc:oc-install`, STOP.
+   - `models` rỗng → "Không có model nào. Đăng nhập opencode / cấu hình provider." STOP.
 
-2. **Hiện danh sách** cho user dạng text (đánh số), mỗi dòng: `<id>` — context `<context>` tokens — toolcall `<toolcall>`.
+2. **Hiện danh sách** cho user, chia 2 nhóm:
+   - **Free** — mỗi dòng: `<id>` — context `<context>` — `FREE`.
+   - **Paid (OpenCode Zen)** — mỗi dòng: `<id>` — context `<context>` — in `$<input>` / out `$<output>` per 1M tokens.
 
 3. **Hỏi chọn** — `AskUserQuestion` (single-select):
-   - question: "Chọn free model để OpenCode chạy task (chất lượng & tốc độ khác nhau):"
-   - header: "Free model"
-   - options: tối đa **4** model đầu trong list (id làm label, mô tả gồm context + toolcall). Nếu có > 4 model → chỉ đưa 4 cái đầu vào options; nói rõ trong question rằng user có thể chọn **Other** rồi gõ chính xác `<provider>/<model>` của bất kỳ model nào đã liệt kê ở bước 2.
-   - KHÔNG tự ý chọn hộ — phải để user quyết.
+   - question: "Chọn model để OpenCode execute. Free = $0. Paid (Zen) = chất lượng cao hơn, tính phí theo cost ở trên (rất rẻ)."
+   - header: "Model"
+   - options: tối đa **4** model tiêu biểu (mix vài free + vài paid đáng chú ý; label = id, description = FREE hoặc `in $x / out $y`). Nói rõ trong question: chọn **Other** để gõ chính xác bất kỳ `<provider>/<model>` đã liệt kê ở bước 2 (free hoặc paid).
+   - Nếu user chọn **paid** → trong xác nhận nêu lại cost để user biết mình sẽ bị tính phí.
+   - KHÔNG tự chọn hộ.
 
-4. **Lưu lựa chọn** — Bash (chọn xong):
-   ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/model-config.mjs" set "${CWD}" "<chosen-id>"
-   ```
-   Validate `<chosen-id>` phải nằm trong danh sách free ở bước 1 (nếu user gõ Other) — nếu không khớp, cảnh báo + hỏi lại.
+4. **Validate + Lưu**:
+   - `<chosen-id>` phải nằm trong danh sách `models` ở bước 1 (free hoặc paid). Không khớp → cảnh báo + hỏi lại.
+   - Bash: `node "${CLAUDE_PLUGIN_ROOT}/scripts/model-config.mjs" set "${CWD}" "<chosen-id>"`.
 
-5. **Xác nhận**: "✅ Đã lưu model `<chosen-id>` cho project này. Chạy `/opencode-plugin-cc:oc-exec <task>` để dùng." Đổi lại bất cứ lúc nào bằng cách chạy lại `/opencode-plugin-cc:oc-model`.
+5. **Xác nhận**: "✅ Đã lưu model `<chosen-id>`" + (nếu paid) "— tính phí ~in $<input>/out $<output> per 1M tokens". "Chạy `/opencode-plugin-cc:oc-exec <task>` để dùng. Đổi lại: `/opencode-plugin-cc:oc-model`."
 
 ## Constraints
 
 - KHÔNG chạy exec ở đây — chỉ chọn + lưu model.
-- Chỉ cho chọn model **thực sự free** (có trong output `--list`). KHÔNG cho chọn model trả phí.
-- Lựa chọn lưu per-project tại `<cwd>/.opencode-plugin/config.json` (key `model`).
+- Cho chọn **free hoặc paid Zen**, nhưng `<chosen-id>` BẮT BUỘC phải có trong output `--list --all` (model thật trên account này). KHÔNG bịa id.
+- Khi user chọn paid → phải hiển thị cost rõ ràng trước khi lưu (informed consent về chi phí).
+- Lưu per-project tại `<cwd>/.opencode-plugin/config.json` (key `model`).
+- Lưu ý: auto-pick (khi user chưa chọn gì) luôn chỉ chọn **free** — paid chỉ khi user chủ động chọn ở đây hoặc truyền `--model` trực tiếp.

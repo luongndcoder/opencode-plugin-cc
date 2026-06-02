@@ -13,7 +13,7 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
 0. **Chọn free model (chỉ lần đầu mỗi project)**:
    - Lấy model đã lưu: Bash `node "${CLAUDE_PLUGIN_ROOT}/scripts/model-config.mjs" get "${CWD}"`.
      - Output **không rỗng** → đã có lựa chọn → dùng luôn, KHÔNG hỏi lại. (Đổi model: `/opencode-plugin-cc:oc-model`.)
-     - Output **rỗng** → chưa chọn → chạy nguyên flow của `/opencode-plugin-cc:oc-model` ngay tại đây: `model-selector.mjs --list` → hiện danh sách → `AskUserQuestion` cho user chọn (tối đa 4 option + Other) → `model-config.mjs set "${CWD}" "<chosen>"`.
+     - Output **rỗng** → chưa chọn → chạy nguyên flow của `/opencode-plugin-cc:oc-model` ngay tại đây: `model-selector.mjs --list --all` (free + paid Zen, kèm cost) → hiện danh sách → `AskUserQuestion` cho user chọn (tối đa 4 option + Other; paid phải nêu cost) → `model-config.mjs set "${CWD}" "<chosen>"`.
      - Nếu opencode chưa cài (exit 3) → gợi ý `/opencode-plugin-cc:oc-install`, STOP.
    - Gọi `<model>` = giá trị đã lưu/đã chọn, dùng ở bước b.
 

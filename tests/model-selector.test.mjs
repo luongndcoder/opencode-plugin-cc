@@ -7,6 +7,7 @@ import {
   pickFree,
   selectFreeModel,
   listFreeModels,
+  listAllModels,
   NoFreeModelError,
 } from '../scripts/model-selector.mjs'
 
@@ -138,6 +139,34 @@ test('listFreeModels: returns only free models, preference-ordered, with metadat
   )
   assert.equal(models[0].toolcall, true)
   assert.equal(models[0].context, 200000)
+})
+
+test('listAllModels: includes paid models with cost + free flag, free group first', async () => {
+  const spawn = fakeSpawn({ stdout: VERBOSE_SAMPLE })
+  const models = await listAllModels({ spawn })
+  assert.equal(models.length, 3)
+  // free first (big-pickle, minimax-m3-free), then paid (deepseek-v4-flash)
+  assert.deepEqual(
+    models.map((m) => m.id),
+    ['opencode/big-pickle', 'opencode/minimax-m3-free', 'opencode-go/deepseek-v4-flash'],
+  )
+  assert.equal(models[0].free, true)
+  assert.equal(models[2].free, false)
+  assert.equal(models[2].output, 0.3)
+})
+
+test('listAllModels: paid models sorted cheapest first', async () => {
+  // synthetic verbose output with two paid models of differing cost
+  const verbose = `opencode-go/expensive
+{ "id": "expensive", "cost": { "input": 1, "output": 2 }, "capabilities": { "toolcall": true } }
+opencode-go/cheap
+{ "id": "cheap", "cost": { "input": 0, "output": 0.3 }, "capabilities": { "toolcall": true } }`
+  const spawn = fakeSpawn({ stdout: verbose })
+  const models = await listAllModels({ spawn })
+  assert.deepEqual(
+    models.map((m) => m.id),
+    ['opencode-go/cheap', 'opencode-go/expensive'],
+  )
 })
 
 test('selectFreeModel: throws NoFreeModelError when no free model found', async () => {

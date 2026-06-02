@@ -9,8 +9,8 @@
     {
       "name": "opencode-plugin-cc",
       "source": "./",
-      "description": "CC plans + reviews, OpenCode executes tasks with free models (Ollama / Groq / OpenRouter / DeepSeek). Plan → exec → verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
-      "version": "0.3.0",
+      "description": "CC plans + reviews, OpenCode executes tasks with a free or cheap paid OpenCode Zen model (pick via /oc-model). Plan → exec → verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
+      "version": "0.4.0",
       "author": {
         "name": "luongnd",
         "email": "luongnd@mobio.io"

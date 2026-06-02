@@ -195,18 +195,60 @@ export async function listFreeModels({
   return free.sort((a, b) => rank(a.id) - rank(b.id) || (b.context || 0) - (a.context || 0))
 }
 
-// CLI: `node scripts/model-selector.mjs --list` → prints free models as JSON.
+/**
+ * List ALL models (free + paid) so the user can opt into paid OpenCode Zen
+ * models (e.g. `opencode-go/*`) for higher quality. Free models come first
+ * (preference-ordered); paid models follow, cheapest first.
+ *
+ * @returns {Promise<Array<{id, input, output, free, context, toolcall}>>}
+ */
+export async function listAllModels({
+  spawn = defaultSpawn,
+  timeoutMs = DEFAULT_LIST_TIMEOUT_MS,
+} = {}) {
+  const text = await listVerbose({ spawn, timeoutMs })
+  const models = parseVerboseModels(text)
+    .filter((m) => m.cost)
+    .map((m) => ({
+      id: m.id,
+      input: m.cost.input,
+      output: m.cost.output,
+      free: m.cost.input === 0 && m.cost.output === 0,
+      context: m.context,
+      toolcall: m.toolcall === true,
+    }))
+
+  const rank = (id) => {
+    const i = PREFERENCE.indexOf(id)
+    return i === -1 ? PREFERENCE.length : i
+  }
+  return models.sort((a, b) => {
+    if (a.free !== b.free) return a.free ? -1 : 1 // free group first
+    if (a.free) return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id)
+    const ca = (a.input || 0) + (a.output || 0)
+    const cb = (b.input || 0) + (b.output || 0)
+    return ca - cb || a.id.localeCompare(b.id) // paid: cheapest first
+  })
+}
+
+// CLI: `node scripts/model-selector.mjs --list [--all]` → prints models as JSON.
+//   --list        free models only (default)
+//   --list --all  every model (free + paid OpenCode Zen) with cost + `free` flag
 // Used by the /oc-model and /oc-exec skills to build an AskUserQuestion.
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.argv[2] === '--list') {
-    listFreeModels()
-      .then((models) => process.stdout.write(JSON.stringify({ models }, null, 2) + '\n'))
+    const all = process.argv.includes('--all')
+    const fn = all ? listAllModels : listFreeModels
+    fn()
+      .then((models) =>
+        process.stdout.write(JSON.stringify({ includes_paid: all, models }, null, 2) + '\n'),
+      )
       .catch((e) => {
         process.stderr.write(`${e.name}: ${e.message}\n`)
         process.exit(e.name === 'OpencodeNotInstalledError' ? 3 : 2)
       })
   } else {
-    process.stderr.write('usage: node scripts/model-selector.mjs --list\n')
+    process.stderr.write('usage: node scripts/model-selector.mjs --list [--all]\n')
     process.exit(2)
   }
 }
