@@ -172,3 +172,41 @@ export async function selectFreeModel({
   if (!picked) throw new NoFreeModelError()
   return picked
 }
+
+/**
+ * List ALL free models (cost.input === 0 && cost.output === 0) for the user to
+ * choose from. Preference-ordered first, then by context size desc.
+ *
+ * @returns {Promise<Array<{id: string, context: number|null, toolcall: boolean}>>}
+ */
+export async function listFreeModels({
+  spawn = defaultSpawn,
+  timeoutMs = DEFAULT_LIST_TIMEOUT_MS,
+} = {}) {
+  const text = await listVerbose({ spawn, timeoutMs })
+  const free = parseVerboseModels(text)
+    .filter((m) => m.cost && m.cost.input === 0 && m.cost.output === 0)
+    .map((m) => ({ id: m.id, context: m.context, toolcall: m.toolcall === true }))
+
+  const rank = (id) => {
+    const i = PREFERENCE.indexOf(id)
+    return i === -1 ? PREFERENCE.length : i
+  }
+  return free.sort((a, b) => rank(a.id) - rank(b.id) || (b.context || 0) - (a.context || 0))
+}
+
+// CLI: `node scripts/model-selector.mjs --list` → prints free models as JSON.
+// Used by the /oc-model and /oc-exec skills to build an AskUserQuestion.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  if (process.argv[2] === '--list') {
+    listFreeModels()
+      .then((models) => process.stdout.write(JSON.stringify({ models }, null, 2) + '\n'))
+      .catch((e) => {
+        process.stderr.write(`${e.name}: ${e.message}\n`)
+        process.exit(e.name === 'OpencodeNotInstalledError' ? 3 : 2)
+      })
+  } else {
+    process.stderr.write('usage: node scripts/model-selector.mjs --list\n')
+    process.exit(2)
+  }
+}

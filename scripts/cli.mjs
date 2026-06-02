@@ -12,6 +12,7 @@ import {
 } from './opencode-bridge.mjs'
 import { createCancelHandler } from './cancel-handler.mjs'
 import { selectFreeModel, NoFreeModelError } from './model-selector.mjs'
+import { readModel, writeModel } from './model-config.mjs'
 
 const { values } = parseArgs({
   options: {
@@ -51,12 +52,33 @@ const onTrace = (entry) => appendFileSync(traceFile, JSON.stringify(entry) + '\n
 const maxRetry = values['max-retry'] ? Number.parseInt(values['max-retry'], 10) : undefined
 const timeoutMs = values.timeout ? Number.parseInt(values.timeout, 10) : undefined
 
-// Resolve the model BEFORE spawning the exec run.
-// `free` / `auto` / omitted → query `opencode models` and auto-pick a free model
-// (cost.input === 0 && cost.output === 0). A concrete `provider/model` passes through.
+// Resolve the model BEFORE spawning the exec run. Precedence:
+//   1. explicit concrete `--model provider/model` → use it + persist as project default.
+//   2. saved choice in <cwd>/.opencode-plugin/config.json (set via /oc-model) → use it.
+//   3. `free` / `auto` / omitted + no saved choice → auto-pick a free model (fallback).
+const AUTO_MODEL = new Set(['free', 'auto', ''])
 let model
+let modelSource
 try {
-  model = await selectFreeModel({ requested: values.model })
+  const requested = values.model
+  if (requested && !AUTO_MODEL.has(requested)) {
+    model = requested
+    modelSource = 'flag'
+    try {
+      writeModel(cwd, model)
+    } catch {
+      // non-fatal: persisting the choice failed (e.g. read-only cwd)
+    }
+  } else {
+    const saved = readModel(cwd)
+    if (saved) {
+      model = saved
+      modelSource = 'config'
+    } else {
+      model = await selectFreeModel({ requested: 'free' })
+      modelSource = 'auto'
+    }
+  }
 } catch (err) {
   const payload = { success: false, error_type: err.name, error_message: err.message }
   process.stdout.write(JSON.stringify(payload) + '\n')
@@ -65,8 +87,8 @@ try {
   if (err instanceof OpencodeTimeoutError) process.exit(124)
   process.exit(2)
 }
-onTrace({ event: 'model_selected', requested: values.model || null, model })
-process.stderr.write(`opencode-plugin-cc: using model ${model}\n`)
+onTrace({ event: 'model_selected', requested: values.model || null, model, source: modelSource })
+process.stderr.write(`opencode-plugin-cc: using model ${model} (${modelSource})\n`)
 
 const abortController = new AbortController()
 const cancelHandler = createCancelHandler({

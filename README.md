@@ -4,7 +4,7 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality, paid) while OpenCode does the implementation grunt-work with free models (Ollama / Groq / OpenRouter / DeepSeek free tier).
 
-> **Status:** v0.2.1. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Zero runtime npm deps. Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
+> **Status:** v0.3.0. End-to-end verified against `opencode` 1.15.x (NDJSON output parsing). Zero runtime npm deps. On first run you pick a free model via `/oc-model` (saved per project). Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
 
 ## Why
 
@@ -52,7 +52,7 @@ Quick verify:
 ```bash
 opencode --version           # should report >= 1.2.0  (or run /opencode-plugin-cc:oc-install)
 node scripts/cli.mjs --help  # CLI usage
-npm test                     # 57/57 unit tests (Node's built-in runner, no deps)
+npm test                     # 64/64 unit tests (Node's built-in runner, no deps)
 ```
 
 ## Commands
@@ -62,6 +62,7 @@ npm test                     # 57/57 unit tests (Node's built-in runner, no deps
 | Command       | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
 | `/oc-install` | Detect & install (or upgrade) `opencode` for your OS — asks before running    |
+| `/oc-model`   | List currently-free opencode models and pick one (saved per project)          |
 | `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
 | `/oc-exec`    | Delegate one or all planned tasks to OpenCode, with reviewer + retry gate     |
 | `/oc-verify`  | Run repo's test + lint after `/oc-exec`; re-delegate on failure if you choose |
@@ -92,7 +93,7 @@ Typical session:
 
 ## Configuration
 
-- **OpenCode model selection:** pass `--model <provider>/<name>` in `/oc-exec` to pin a model. Omit `--model` (or pass `--model free` / `--model auto`) and the plugin queries `opencode models --verbose` and auto-picks an available **free** model — one whose `cost.input` and `cost.output` are both `0` (input-only-free providers are skipped). The chosen model is written to stderr + a `model_selected` trace event. Set defaults in your project's `opencode.json`.
+- **OpenCode model selection:** free models vary a lot in quality, so **on the first `/oc-exec` the plugin lists the currently-free models and asks you to pick one** (run `/opencode-plugin-cc:oc-model` any time to choose / change). Your choice is saved per project in `<cwd>/.opencode-plugin/config.json` (`{"model": "..."}`) and reused on every later run — no repeat prompt. Resolution precedence: explicit `--model <provider>/<name>` (also persisted) → saved config → auto-pick a free model (`cost.input` and `cost.output` both `0`; input-only-free providers skipped). The model actually used is logged to stderr + a `model_selected` trace event (with `source`: flag/config/auto).
 - **Trace log:** every `/oc-exec` appends to `<cwd>/.opencode-plugin/trace.jsonl` with `traceId`, attempt, status, duration, model, exit code, error. Use this to audit cost and reliability.
 - **Retry budget:** default 2 retries inside the bridge (transient errors) + up to 2 reviewer-driven retries at CC level. Adjust via `--max-retry` to CLI.
 
@@ -155,7 +156,7 @@ Key constraints:
 ## Development
 
 ```bash
-npm test                  # 57 unit tests (node:test)
+npm test                  # 64 unit tests (node:test)
 npm run test:coverage     # coverage report (experimental)
 ```
 

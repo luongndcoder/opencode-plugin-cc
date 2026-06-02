@@ -6,6 +6,7 @@ import {
   parseVerboseModels,
   pickFree,
   selectFreeModel,
+  listFreeModels,
   NoFreeModelError,
 } from '../scripts/model-selector.mjs'
 
@@ -124,6 +125,19 @@ test('selectFreeModel: undefined requested auto-picks too', async () => {
   const spawn = fakeSpawn({ stdout: VERBOSE_SAMPLE })
   const out = await selectFreeModel({ requested: undefined, spawn })
   assert.equal(out, 'opencode/big-pickle')
+})
+
+test('listFreeModels: returns only free models, preference-ordered, with metadata', async () => {
+  const spawn = fakeSpawn({ stdout: VERBOSE_SAMPLE })
+  const models = await listFreeModels({ spawn })
+  // VERBOSE_SAMPLE: big-pickle (free), deepseek-v4-flash (input-free/output-paid → NOT free),
+  // minimax-m3-free (free)
+  assert.deepEqual(
+    models.map((m) => m.id),
+    ['opencode/big-pickle', 'opencode/minimax-m3-free'],
+  )
+  assert.equal(models[0].toolcall, true)
+  assert.equal(models[0].context, 200000)
 })
 
 test('selectFreeModel: throws NoFreeModelError when no free model found', async () => {

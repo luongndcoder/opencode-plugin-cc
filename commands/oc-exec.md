@@ -10,6 +10,13 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
 
 > **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng đầy đủ `/opencode-plugin-cc:oc-*` (vd `/opencode-plugin-cc:oc-exec t3`, `/opencode-plugin-cc:oc-verify`). Bare `/oc-*` KHÔNG phải slash command hợp lệ trong Claude Code — user gõ sẽ bị "Unknown command".
 
+0. **Chọn free model (chỉ lần đầu mỗi project)**:
+   - Lấy model đã lưu: Bash `node "${CLAUDE_PLUGIN_ROOT}/scripts/model-config.mjs" get "${CWD}"`.
+     - Output **không rỗng** → đã có lựa chọn → dùng luôn, KHÔNG hỏi lại. (Đổi model: `/opencode-plugin-cc:oc-model`.)
+     - Output **rỗng** → chưa chọn → chạy nguyên flow của `/opencode-plugin-cc:oc-model` ngay tại đây: `model-selector.mjs --list` → hiện danh sách → `AskUserQuestion` cho user chọn (tối đa 4 option + Other) → `model-config.mjs set "${CWD}" "<chosen>"`.
+     - Nếu opencode chưa cài (exit 3) → gợi ý `/opencode-plugin-cc:oc-install`, STOP.
+   - Gọi `<model>` = giá trị đã lưu/đã chọn, dùng ở bước b.
+
 1. **Locate plan**: tìm output `/oc-plan` gần nhất trong conversation context. Nếu không có → ask user chạy `/opencode-plugin-cc:oc-plan` trước.
 
 2. **Iterate tasks**:
@@ -34,11 +41,11 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
       node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.mjs \
         --prompt "<built prompt>" \
         --cwd "${CWD}" \
-        --model "free" \
+        --model "<model>" \
         --agent "build" \
         --trace-file "${CWD}/.opencode-plugin/trace.jsonl"
       ```
-      `--model "free"` (or omitting `--model`) → plugin tự dò `opencode models` và chọn một free model khả dụng (`cost.input == 0 && cost.output == 0`). Truyền `--model "<provider>/<model>"` cụ thể để override. Model đã chọn ghi vào stderr + trace event `model_selected`.
+      `<model>` = model user đã chọn ở bước 0 (cli sẽ persist vào `config.json`). Nếu bỏ `--model`, cli đọc model đã lưu trong `config.json`; nếu cũng chưa có thì auto-pick free model. Model thực dùng ghi vào stderr + trace event `model_selected` (kèm `source`: flag/config/auto).
 
    c. Parse stdout JSON `{ success, result }`:
       - `success: true` → `result` là object đã normalize: `result.session_id`, `result.status`, `result.result.diff` (tổng hợp từ tool_use write/edit/patch), `result.result.files_changed`, `result.result.message`, `result.result.model_used`, `result.result.tokens_used`. Proceed step d.
