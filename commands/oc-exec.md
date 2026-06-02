@@ -44,7 +44,7 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
       - `success: true` → `result` là object đã normalize: `result.session_id`, `result.status`, `result.result.diff` (tổng hợp từ tool_use write/edit/patch), `result.result.files_changed`, `result.result.message`, `result.result.model_used`, `result.result.tokens_used`. Proceed step d.
       - `success: false`:
         - `error_type: RetryExhaustedError` → report user, stop task (bridge retry already exhausted at low level)
-        - `error_type: OpencodeNotInstalledError` → tell user install opencode, stop all
+        - `error_type: OpencodeNotInstalledError` → gợi ý user chạy `/opencode-plugin-cc:oc-install` để cài opencode, stop all
         - `error_type: OpencodeTimeoutError` → tell user task too slow, suggest split, stop task
         - Other → report + stop task
 

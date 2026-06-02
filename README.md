@@ -4,7 +4,7 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality, paid) while OpenCode does the implementation grunt-work with free models (Ollama / Groq / OpenRouter / DeepSeek free tier).
 
-> **Status:** v0.1.4. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Commands are namespaced (`/opencode-plugin-cc:oc-*`). Still early — validate on your own tasks before relying on it.
+> **Status:** v0.2.0. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
 
 ## Why
 
@@ -20,7 +20,7 @@ Net effect: pay Claude tokens only for planning + review, save Claude tokens on 
 
 - [Claude Code](https://www.anthropic.com/claude-code) CLI
 - Node.js ≥ 20
-- [anomalyco/opencode](https://github.com/anomalyco/opencode) ≥ v1.2 in `PATH`
+- [anomalyco/opencode](https://github.com/anomalyco/opencode) ≥ v1.2 in `PATH` — **don't have it? run `/opencode-plugin-cc:oc-install`** (detects brew / curl | bash / npm / scoop / choco for your OS and asks before running)
 - A configured free-model provider in OpenCode (see [opencode.ai/docs/cli](https://opencode.ai/docs/cli/))
 
 ## Install
@@ -51,6 +51,7 @@ node --test tests/*.test.mjs # 49/49 unit tests should pass
 
 | Command       | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
+| `/oc-install` | Detect & install (or upgrade) `opencode` for your OS — asks before running    |
 | `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
 | `/oc-exec`    | Delegate one or all planned tasks to OpenCode, with reviewer + retry gate     |
 | `/oc-verify`  | Run repo's test + lint after `/oc-exec`; re-delegate on failure if you choose |
