@@ -4,7 +4,7 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality, paid) while OpenCode does the implementation grunt-work with free models (Ollama / Groq / OpenRouter / DeepSeek free tier).
 
-> **Status:** v0.2.0. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
+> **Status:** v0.2.1. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Zero runtime npm deps. Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
 
 ## Why
 
@@ -25,24 +25,34 @@ Net effect: pay Claude tokens only for planning + review, save Claude tokens on 
 
 ## Install
 
+### Option A — marketplace (recommended)
+
+Run these inside Claude Code:
+
+```
+/plugin marketplace add luongndcoder/opencode-plugin-cc
+/plugin install opencode-plugin-cc@luongndcoder
+```
+
+Then reload Claude Code. Verify the commands loaded: type `/oc` and press **Tab** → you should see `opencode-plugin-cc:oc-*`.
+
+> The plugin has **zero runtime npm dependencies** — nothing to `npm install`, it works straight from the clone.
+> Don't have `opencode` yet? Run `/opencode-plugin-cc:oc-install` and it'll set it up.
+
+### Option B — local / dev (load a directory)
+
 ```bash
-# 1. Clone or download this repo
-git clone https://github.com/luongnd/opencode-plugin-cc.git
+git clone https://github.com/luongndcoder/opencode-plugin-cc.git
 cd opencode-plugin-cc
-
-# 2. Install dependencies
-npm install
-
-# 3. Register with Claude Code (one-time)
-#    Symlink/copy into ~/.claude/plugins/ or follow Claude Code plugin install docs.
+claude --plugin-dir "$(pwd)"     # launch Claude Code with this dir as a plugin
 ```
 
 Quick verify:
 
 ```bash
-opencode --version          # should report >= 1.2.0
-node scripts/cli.mjs --help # CLI usage
-node --test tests/*.test.mjs # 49/49 unit tests should pass
+opencode --version           # should report >= 1.2.0  (or run /opencode-plugin-cc:oc-install)
+node scripts/cli.mjs --help  # CLI usage
+npm test                     # 57/57 unit tests (Node's built-in runner, no deps)
 ```
 
 ## Commands
@@ -104,7 +114,7 @@ Claude Code (main loop)
     │                       └── retry-loop.mjs
     │                              │
     │                              └── opencode-bridge.mjs  ── subprocess ──→  opencode run --format json
-    │                                       (validate JSON via Ajv, chunked stream reader)
+    │                                       (parse NDJSON events, zero-dep schema check, chunked stream reader)
     │                       returns JSON to CC
     │                  CC spawns Task(opencode-reviewer) ──→  agent emits JSON verdict
     │                  CC decides: approve / re-delegate with feedback / escalate user
@@ -140,12 +150,12 @@ Key constraints:
 | `/oc-cancel` says "no active task"                | PID file `<cwd>/.opencode-plugin/active.pid` missing — nothing to cancel.        |
 | Stale PID file                                    | `/oc-cancel` auto-cleans stale PIDs (verifies process alive first).               |
 | Reviewer always fails with "uncertain"            | Add Mobio CLAUDE.md / better repo context. Or simplify task.                       |
-| `node --test` says module not found               | Run `npm install`, ensure Node ≥ 20.                                              |
+| `node --test` says module not found               | Ensure Node ≥ 20. The plugin has no npm deps, so no `npm install` is needed.       |
 
 ## Development
 
 ```bash
-npm test                  # 49 unit tests (node:test)
+npm test                  # 57 unit tests (node:test)
 npm run test:coverage     # coverage report (experimental)
 ```
 
