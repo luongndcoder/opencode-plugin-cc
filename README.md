@@ -131,22 +131,91 @@ The plugin logs prompt content into `trace.jsonl` for auditing — `.gitignore` 
 
 ## Architecture
 
+**Roles:** Claude Code plans + reviews (high quality, you pay for this); OpenCode executes the grunt edits with a cheap model. A Node subprocess bridge connects them.
+
+### Components & data flow
+
+```mermaid
+flowchart TB
+    subgraph CC["Claude Code — main loop (plan + review)"]
+        direction TB
+        Plan["/oc-plan<br/>reason over task + repo<br/>→ atomic task list (+ skill tags)"]
+        Exec["/oc-exec<br/>orchestrate per task"]
+        Reviewer["Task(opencode-reviewer)<br/>strict-JSON verdict"]
+        Verify["/oc-verify<br/>test + lint gate"]
+    end
+
+    subgraph Bridge["Subprocess bridge — Node, zero-dep"]
+        direction TB
+        CLI["scripts/cli.mjs<br/>resolve model + write trace"]
+        Retry["retry-loop.mjs<br/>bounded transient retries"]
+        BridgeMod["opencode-bridge.mjs<br/>spawn + chunked NDJSON parse"]
+    end
+
+    subgraph OC["OpenCode — executor (cheap)"]
+        direction TB
+        Run["opencode run --agent build --format json"]
+        Model["model: free / paid Zen"]
+        SkillTool["skill tool"]
+    end
+
+    subgraph Skills["Skill discovery (opencode-native)"]
+        direction TB
+        Global["~/.claude/skills (be-*)<br/>auto-discovered"]
+        Synced["~/.config/opencode/skills<br/>← /oc-skills sync (project-local)"]
+    end
+
+    Cfg[("&lt;cwd&gt;/.opencode-plugin/<br/>config.json · trace.jsonl · active.pid")]
+
+    Plan -->|plan markdown| Exec
+    Exec -->|"Bash: prompt + model + skills"| CLI
+    CLI --> Retry --> BridgeMod
+    BridgeMod -->|subprocess stdin/stdout| Run
+    Run --> Model
+    Run --> SkillTool
+    SkillTool -.reads.-> Global
+    SkillTool -.reads.-> Synced
+    Run -->|NDJSON events| BridgeMod
+    BridgeMod -->|normalized JSON diff| Exec
+    Exec -->|diff| Reviewer
+    Reviewer -->|pass / reject+feedback / escalate| Exec
+    Exec -->|on pass| Verify
+    CLI -.->|persist + audit| Cfg
 ```
-Claude Code (main loop)
-    │
-    ├── /oc-plan  ──→  CC reasons; outputs structured plan (Markdown)
-    │
-    ├── /oc-exec  ──→  Bash: node scripts/cli.mjs --prompt … --cwd …
-    │                       │
-    │                       └── retry-loop.mjs
-    │                              │
-    │                              └── opencode-bridge.mjs  ── subprocess ──→  opencode run --format json
-    │                                       (parse NDJSON events, zero-dep schema check, chunked stream reader)
-    │                       returns JSON to CC
-    │                  CC spawns Task(opencode-reviewer) ──→  agent emits JSON verdict
-    │                  CC decides: approve / re-delegate with feedback / escalate user
-    │
-    └── /oc-verify ──→  Bash: npm test / pytest / go test (repo-detected)
+
+### Runtime interaction (one `/oc-exec` round-trip)
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant CC as Claude Code
+    participant CLI as cli.mjs bridge
+    participant OC as opencode run
+    participant R as opencode-reviewer
+
+    U->>CC: /oc-plan "the task"
+    CC-->>U: atomic task list (t1..tn — risk, skills)
+    U->>CC: /oc-exec all
+    Note over CC: Step 0  resolve model (saved config or pick)<br/>Step 0.5  sync project-local skills (idempotent)
+    loop per task — max 2 reviewer-retries
+        CC->>CLI: prompt + model + available skills
+        CLI->>OC: spawn (--agent build --format json)
+        Note over OC: may invoke be-* skills via the skill tool
+        OC-->>CLI: NDJSON events (diff, files, tokens)
+        CLI-->>CC: normalized JSON
+        CC->>R: review diff (correctness / scope / security / Mobio)
+        alt verdict: pass
+            R-->>CC: { pass: true }
+        else verdict: reject
+            R-->>CC: { pass: false, feedback }
+            Note over CC: re-delegate with feedback embedded
+        else hard gate / critical
+            R-->>CC: { should_escalate_user: true }
+            CC-->>U: STOP — ask for approval
+        end
+    end
+    U->>CC: /oc-verify
+    CC-->>U: test + lint result → commit-ready
 ```
 
 Key constraints:
