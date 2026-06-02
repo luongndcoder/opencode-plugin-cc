@@ -11,6 +11,7 @@ import {
   OpencodeAbortedError,
 } from './opencode-bridge.mjs'
 import { createCancelHandler } from './cancel-handler.mjs'
+import { selectFreeModel, NoFreeModelError } from './model-selector.mjs'
 
 const { values } = parseArgs({
   options: {
@@ -50,6 +51,23 @@ const onTrace = (entry) => appendFileSync(traceFile, JSON.stringify(entry) + '\n
 const maxRetry = values['max-retry'] ? Number.parseInt(values['max-retry'], 10) : undefined
 const timeoutMs = values.timeout ? Number.parseInt(values.timeout, 10) : undefined
 
+// Resolve the model BEFORE spawning the exec run.
+// `free` / `auto` / omitted → query `opencode models` and auto-pick a free model
+// (cost.input === 0 && cost.output === 0). A concrete `provider/model` passes through.
+let model
+try {
+  model = await selectFreeModel({ requested: values.model })
+} catch (err) {
+  const payload = { success: false, error_type: err.name, error_message: err.message }
+  process.stdout.write(JSON.stringify(payload) + '\n')
+  if (err instanceof NoFreeModelError) process.exit(3)
+  if (err instanceof OpencodeNotInstalledError) process.exit(3)
+  if (err instanceof OpencodeTimeoutError) process.exit(124)
+  process.exit(2)
+}
+onTrace({ event: 'model_selected', requested: values.model || null, model })
+process.stderr.write(`opencode-plugin-cc: using model ${model}\n`)
+
 const abortController = new AbortController()
 const cancelHandler = createCancelHandler({
   pidFile,
@@ -62,7 +80,7 @@ try {
   const result = await run({
     prompt: values.prompt,
     cwd,
-    model: values.model,
+    model,
     agent: values.agent,
     signal: abortController.signal,
     onTrace,

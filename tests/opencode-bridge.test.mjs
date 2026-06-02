@@ -106,7 +106,7 @@ test('invoke: completion cleans abort listener (no leak after success)', async (
 test('invoke: builds CLI args correctly (--dir, --agent, --format json, prompt positional)', async () => {
   const stdout = JSON.stringify({ session_id: 's1', status: 'completed' })
   const spawn = fakeSpawn({ stdout })
-  await invoke({ prompt: 'do thing', cwd: '/repo', model: 'free', agent: 'build', spawn })
+  await invoke({ prompt: 'do thing', cwd: '/repo', model: 'opencode/big-pickle', agent: 'build', spawn })
   const call = spawn.mock.calls[0]
   assert.equal(call.arguments[0], 'opencode')
   const args = call.arguments[1]
@@ -116,8 +116,16 @@ test('invoke: builds CLI args correctly (--dir, --agent, --format json, prompt p
   assert.ok(args.includes('--format'))
   assert.ok(args.includes('json'))
   assert.ok(args.includes('--model'))
-  assert.ok(args.includes('free'))
+  assert.ok(args.includes('opencode/big-pickle'))
   assert.ok(args.includes('--agent'))
   assert.ok(args.includes('build'))
   assert.equal(args[args.length - 1], 'do thing', 'prompt must be positional at end')
+})
+
+test('invoke: omits --model entirely when model is falsy (never passes literal "free")', async () => {
+  const stdout = JSON.stringify({ session_id: 's1', status: 'completed' })
+  const spawn = fakeSpawn({ stdout })
+  await invoke({ prompt: 'do thing', cwd: '/repo', agent: 'build', spawn })
+  const args = spawn.mock.calls[0].arguments[1]
+  assert.ok(!args.includes('--model'), '--model must be absent when no model resolved')
 })

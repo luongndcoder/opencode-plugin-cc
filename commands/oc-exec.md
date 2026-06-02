@@ -36,9 +36,10 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
         --agent "build" \
         --trace-file "${CWD}/.opencode-plugin/trace.jsonl"
       ```
+      `--model "free"` (or omitting `--model`) → plugin tự dò `opencode models` và chọn một free model khả dụng (`cost.input == 0 && cost.output == 0`). Truyền `--model "<provider>/<model>"` cụ thể để override. Model đã chọn ghi vào stderr + trace event `model_selected`.
 
-   c. Parse stdout JSON:
-      - `success: true` → proceed step d
+   c. Parse stdout JSON `{ success, result }`:
+      - `success: true` → `result` là object đã normalize: `result.session_id`, `result.status`, `result.result.diff` (tổng hợp từ tool_use write/edit/patch), `result.result.files_changed`, `result.result.message`, `result.result.model_used`, `result.result.tokens_used`. Proceed step d.
       - `success: false`:
         - `error_type: RetryExhaustedError` → report user, stop task (bridge retry already exhausted at low level)
         - `error_type: OpencodeNotInstalledError` → tell user install opencode, stop all
@@ -49,7 +50,7 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
       ```
       Task tool input:
       - subagent_type: "opencode-reviewer"
-      - prompt: "Review this diff... original_task=<goal>, diff=<result.diff>, files_changed=<list>, target_repo=<cwd>"
+      - prompt: "Review this diff... original_task=<goal>, diff=<result.result.diff>, files_changed=<result.result.files_changed>, target_repo=<cwd>"
       ```
 
    e. Parse reviewer JSON verdict:

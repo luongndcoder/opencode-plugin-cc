@@ -1,6 +1,7 @@
 import { spawn as defaultSpawn } from 'node:child_process'
 import { readAll } from './stream-reader.mjs'
 import { validate } from './schema-validator.mjs'
+import { normalizeOutput } from './output-parser.mjs'
 
 export class OpencodeOutputError extends Error {
   constructor(message) {
@@ -55,7 +56,11 @@ function buildArgs({ cwd, model, agent, prompt }) {
 export async function invoke({
   prompt,
   cwd,
-  model = 'free',
+  // No default model: callers resolve a concrete `provider/model` upstream
+  // (see model-selector.mjs). When falsy, `--model` is omitted and opencode
+  // falls back to its own configured default. The literal `free` is NOT a
+  // valid opencode model id (it parses to provider `free` / empty model).
+  model,
   agent = 'build',
   command,
   spawn = defaultSpawn,
@@ -137,9 +142,11 @@ export async function invoke({
 
     let parsed
     try {
-      parsed = JSON.parse(stdout)
+      // opencode emits an NDJSON event stream; normalizeOutput aggregates it
+      // into the single result object the schema expects.
+      parsed = normalizeOutput(stdout, { model })
     } catch (e) {
-      throw new OpencodeOutputError(`stdout is not valid JSON: ${e.message}`)
+      throw new OpencodeOutputError(`stdout is not valid opencode output: ${e.message}`)
     }
 
     const v = validate(parsed)

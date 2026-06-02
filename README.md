@@ -4,7 +4,7 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality, paid) while OpenCode does the implementation grunt-work with free models (Ollama / Groq / OpenRouter / DeepSeek free tier).
 
-> **Status:** v0.1.0 MVP. Pilot validation pending. Not production-ready.
+> **Status:** v0.1.3. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Still early — validate on your own tasks before relying on it.
 
 ## Why
 
@@ -42,7 +42,7 @@ Quick verify:
 ```bash
 opencode --version          # should report >= 1.2.0
 node scripts/cli.mjs --help # CLI usage
-node --test tests/*.test.mjs # 22/22 unit tests should pass
+node --test tests/*.test.mjs # 49/49 unit tests should pass
 ```
 
 ## Commands
@@ -79,7 +79,7 @@ Typical session:
 
 ## Configuration
 
-- **OpenCode model selection:** pass `--model <provider>/<name>` in `/oc-exec`, or default `--model free` (random free model). Set defaults in your project's `opencode.json`.
+- **OpenCode model selection:** pass `--model <provider>/<name>` in `/oc-exec` to pin a model. Omit `--model` (or pass `--model free` / `--model auto`) and the plugin queries `opencode models --verbose` and auto-picks an available **free** model — one whose `cost.input` and `cost.output` are both `0` (input-only-free providers are skipped). The chosen model is written to stderr + a `model_selected` trace event. Set defaults in your project's `opencode.json`.
 - **Trace log:** every `/oc-exec` appends to `<cwd>/.opencode-plugin/trace.jsonl` with `traceId`, attempt, status, duration, model, exit code, error. Use this to audit cost and reliability.
 - **Retry budget:** default 2 retries inside the bridge (transient errors) + up to 2 reviewer-driven retries at CC level. Adjust via `--max-retry` to CLI.
 
@@ -129,7 +129,8 @@ Key constraints:
 | Symptom                                           | Likely cause / fix                                                                |
 | ------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `OpencodeNotInstalledError`                       | `opencode` not in PATH. Install: https://github.com/anomalyco/opencode            |
-| `OpencodeOutputError: schema mismatch`            | OpenCode version bumped, schema changed. Update `schemas/opencode-output.json`.   |
+| `Model not found: free/...` / `NoFreeModelError`  | No free model in your opencode account, or the `free` alias is gone. Run `opencode models --verbose`; plugin auto-picks a `cost 0/0` model. Pin one with `--model <provider>/<model>`. |
+| `OpencodeOutputError: ... not valid opencode output` | OpenCode changed its `--format json` stream shape. The bridge parses NDJSON events; update `scripts/output-parser.mjs` if the event schema moved. |
 | `OpencodeTimeoutError`                            | Task too slow (>5min default). Split task with `/oc-plan` or extend `--max-retry` |
 | `RetryExhaustedError`                             | Free model couldn't satisfy reviewer. Check `trace.jsonl`. Switch model.          |
 | `/oc-exec` stuck / too slow                       | Press Esc in CC (sends SIGINT → exit 130) OR run `/oc-cancel` in another CC session. Use `--timeout <ms>` to set hard cap. |
@@ -141,7 +142,7 @@ Key constraints:
 ## Development
 
 ```bash
-npm test                  # 30 unit tests (node:test)
+npm test                  # 49 unit tests (node:test)
 npm run test:coverage     # coverage report (experimental)
 ```
 
