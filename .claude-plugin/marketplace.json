@@ -10,7 +10,7 @@
       "name": "opencode-plugin-cc",
       "source": "./",
       "description": "CC plans + reviews, OpenCode executes tasks with free models (Ollama / Groq / OpenRouter / DeepSeek). Plan → exec → verify with reviewer + retry + cancel.",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "author": {
         "name": "luongnd",
         "email": "luongnd@mobio.io"

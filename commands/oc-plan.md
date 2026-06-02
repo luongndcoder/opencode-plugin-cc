@@ -41,17 +41,19 @@ Bạn là Claude Code. User có task muốn OpenCode (free-model executor) thự
 
 - Low: t1, t3
 - Medium: t2
-- High: (none)  *or*  t4 — flagged for **user review before /oc-exec**
+- High: (none)  *or*  t4 — flagged for **user review before `/opencode-plugin-cc:oc-exec`**
 
 ### Next
 
-- `/oc-exec t1` để delegate task t1 sang OpenCode
-- `/oc-exec all` để delegate tuần tự tất cả (tự động skip high risk, hỏi user trước)
+- `/opencode-plugin-cc:oc-exec t1` để delegate task t1 sang OpenCode
+- `/opencode-plugin-cc:oc-exec all` để delegate tuần tự tất cả (tự động skip high risk, hỏi user trước)
 ```
+
+> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng đầy đủ `/opencode-plugin-cc:oc-*` (vd `/opencode-plugin-cc:oc-exec t1`). Bare `/oc-*` KHÔNG phải slash command hợp lệ trong Claude Code — user gõ sẽ bị "Unknown command". Áp dụng cho mọi output gợi ý bên dưới.
 
 ## Constraints
 
 - KHÔNG execute hay edit file ở `/oc-plan` — chỉ plan.
-- High-risk task → trong output add note "REQUIRES USER APPROVAL trước khi /oc-exec".
+- High-risk task → trong output add note "REQUIRES USER APPROVAL trước khi `/opencode-plugin-cc:oc-exec`".
 - Nếu task user gửi quá lớn (dự đoán > 5 sub-task) → đề xuất chia nhỏ qua `/be-plan` trước.
 - Nếu repo có hard gate detect được trong CLAUDE.md → mention explicit trong risk summary.

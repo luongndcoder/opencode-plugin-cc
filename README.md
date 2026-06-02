@@ -4,7 +4,7 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality, paid) while OpenCode does the implementation grunt-work with free models (Ollama / Groq / OpenRouter / DeepSeek free tier).
 
-> **Status:** v0.1.3. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Still early — validate on your own tasks before relying on it.
+> **Status:** v0.1.4. End-to-end verified against `opencode` 1.15.x (auto free-model selection + NDJSON output parsing). Commands are namespaced (`/opencode-plugin-cc:oc-*`). Still early — validate on your own tasks before relying on it.
 
 ## Why
 
@@ -47,6 +47,8 @@ node --test tests/*.test.mjs # 49/49 unit tests should pass
 
 ## Commands
 
+> **Invoke with the plugin namespace.** Claude Code registers these as namespaced commands — type `/opencode-plugin-cc:oc-exec` (tip: type `/oc` then press **Tab**). The bare `/oc-exec` is **not** a valid slash command and returns "Unknown command". The names below are shown unprefixed for brevity.
+
 | Command       | Purpose                                                                       |
 | ------------- | ----------------------------------------------------------------------------- |
 | `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
@@ -59,11 +61,11 @@ node --test tests/*.test.mjs # 49/49 unit tests should pass
 Typical session:
 
 ```
-/oc-plan add hello function with unit test in src/lib/
+/opencode-plugin-cc:oc-plan add hello function with unit test in src/lib/
 
 → CC outputs t1: add hello fn, t2: add unit test
 
-/oc-exec all
+/opencode-plugin-cc:oc-exec all
 
 → CC builds prompt → invokes scripts/cli.mjs subprocess
 → OpenCode executes t1 with free model, returns diff
@@ -71,7 +73,7 @@ Typical session:
 → Same for t2
 → Summary printed
 
-/oc-verify
+/opencode-plugin-cc:oc-verify
 
 → Detects `npm test` from package.json → runs → green
 → Tells you it's commit-ready
@@ -133,7 +135,7 @@ Key constraints:
 | `OpencodeOutputError: ... not valid opencode output` | OpenCode changed its `--format json` stream shape. The bridge parses NDJSON events; update `scripts/output-parser.mjs` if the event schema moved. |
 | `OpencodeTimeoutError`                            | Task too slow (>5min default). Split task with `/oc-plan` or extend `--max-retry` |
 | `RetryExhaustedError`                             | Free model couldn't satisfy reviewer. Check `trace.jsonl`. Switch model.          |
-| `/oc-exec` stuck / too slow                       | Press Esc in CC (sends SIGINT → exit 130) OR run `/oc-cancel` in another CC session. Use `--timeout <ms>` to set hard cap. |
+| `/oc-exec` stuck / too slow                       | Press Esc in CC (sends SIGINT → exit 130) OR run `/opencode-plugin-cc:oc-cancel` in another CC session. Use `--timeout <ms>` to set hard cap. |
 | `/oc-cancel` says "no active task"                | PID file `<cwd>/.opencode-plugin/active.pid` missing — nothing to cancel.        |
 | Stale PID file                                    | `/oc-cancel` auto-cleans stale PIDs (verifies process alive first).               |
 | Reviewer always fails with "uncertain"            | Add Mobio CLAUDE.md / better repo context. Or simplify task.                       |

@@ -8,7 +8,9 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
 
 ## Flow
 
-1. **Locate plan**: tìm output `/oc-plan` gần nhất trong conversation context. Nếu không có → ask user chạy `/oc-plan` trước.
+> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng đầy đủ `/opencode-plugin-cc:oc-*` (vd `/opencode-plugin-cc:oc-exec t3`, `/opencode-plugin-cc:oc-verify`). Bare `/oc-*` KHÔNG phải slash command hợp lệ trong Claude Code — user gõ sẽ bị "Unknown command".
+
+1. **Locate plan**: tìm output `/oc-plan` gần nhất trong conversation context. Nếu không có → ask user chạy `/opencode-plugin-cc:oc-plan` trước.
 
 2. **Iterate tasks**:
    - Nếu arg = task id (vd `t1`) → chỉ task đó.
@@ -65,7 +67,8 @@ Args: `$ARGUMENTS` — task id (`t1`, `t2`) hoặc `all`.
    - Tasks completed: N
    - Files changed: list (union)
    - Token cost (CC + OpenCode): from trace.jsonl `tokens_used` + estimate CC reviewer tokens
-   - Suggest: `/oc-verify` để chạy test/lint gate
+   - **Next tasks**: chỉ liệt kê task CHƯA chạy (đã done thì bỏ), mỗi dòng dạng `/opencode-plugin-cc:oc-exec <id> — <goal>`. Nếu tất cả task đã done → nói rõ "tất cả task đã xong" và đừng gợi ý `... oc-exec all` (sẽ chạy lại từ đầu). Khuyến nghị chạy lần lượt từng id còn lại.
+   - Suggest: `/opencode-plugin-cc:oc-verify` để chạy test/lint gate
 
 ## Constraints
 

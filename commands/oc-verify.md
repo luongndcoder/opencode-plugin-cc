@@ -4,6 +4,8 @@ description: Run test + lint gate after /oc-exec. Detects test runner from repo 
 
 # /oc-verify — Verify changes
 
+> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng đầy đủ `/opencode-plugin-cc:oc-*`. Bare `/oc-*` KHÔNG phải slash command hợp lệ trong Claude Code — user gõ sẽ bị "Unknown command".
+
 ## Flow
 
 1. **Detect test runner** ở cwd:
@@ -25,7 +27,7 @@ description: Run test + lint gate after /oc-exec. Detects test runner from repo 
 4. **Aggregate**:
    - All green → tell user "✅ All checks pass. Ready to commit."
    - Fail → show failures (last 50 lines output). AskUserQuestion:
-     - `Re-delegate to OpenCode with failure context` → re-build prompt với test output, invoke `/oc-exec` task tương ứng
+     - `Re-delegate to OpenCode with failure context` → re-build prompt với test output, gợi ý user chạy `/opencode-plugin-cc:oc-exec <id>` cho task tương ứng
      - `Fix manually` → CC tự fix
      - `Stop` → leave as-is
 
