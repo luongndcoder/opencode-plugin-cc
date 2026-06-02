@@ -9,8 +9,8 @@
     {
       "name": "opencode-plugin-cc",
       "source": "./",
-      "description": "CC plans + reviews, OpenCode executes tasks with a free or cheap paid OpenCode Zen model (pick via /oc-model). Plan → exec → verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
-      "version": "0.4.0",
+      "description": "CC plans + reviews, OpenCode executes tasks with a free or cheap paid OpenCode Zen model (pick via /oc-model) and can use your Claude Code skills (/oc-skills). Install → model → plan → exec → verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
+      "version": "0.5.0",
       "author": {
         "name": "luongnd",
         "email": "luongnd@mobio.io"

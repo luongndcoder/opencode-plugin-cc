@@ -4,8 +4,8 @@ description: [v2 placeholder] Poll background OpenCode job status.
 
 # /oc-status — Not implemented in MVP
 
-Lệnh này dành cho v2 (background job queue).
+This command is reserved for v2 (background job queue).
 
-MVP hiện tại: mọi `/oc-exec` chạy **synchronous** (foreground). Nếu cần async/background execution, xem roadmap trong README.
+Current MVP: every `/oc-exec` runs **synchronously** (foreground). For async/background execution, see the roadmap in the README.
 
-Args: `$ARGUMENTS` (sẽ là `<job-id>` ở v2).
+Args: `$ARGUMENTS` (will be `<job-id>` in v2).

@@ -4,23 +4,24 @@ description: Use Claude Code to plan a task before delegating to OpenCode. Outpu
 
 # /oc-plan — Plan a task
 
-Bạn là Claude Code. User có task muốn OpenCode (free-model executor) thực thi.
+You are Claude Code. The user has a task they want OpenCode (the free-model executor) to implement.
 
 ## Job
 
-1. Đọc task user gửi: `$ARGUMENTS`
-2. Đọc repo context khi có:
-   - `CLAUDE.md`, `AGENTS.md` (cấp project & global)
-   - `docs/context/overview.md`, `docs/context/architecture.md` nếu có
-   - File liên quan đến task (use `Grep`/`Glob` to locate)
-3. Phân tích: task này có hard gate không (auth, schema migration, Kafka topic, tenant isolation, public API contract)?
-4. Break task thành **1-5 atomic sub-task**. Mỗi sub-task ≤ 200 dòng diff scope dự kiến.
-5. Với mỗi sub-task output:
+1. Read the task the user sent: `$ARGUMENTS`
+2. Read repo context when available:
+   - `CLAUDE.md`, `AGENTS.md` (project & global level)
+   - `docs/context/overview.md`, `docs/context/architecture.md` if present
+   - Files relevant to the task (use `Grep`/`Glob` to locate)
+3. Analyze: does this task hit a hard gate (auth, schema migration, Kafka topic, tenant isolation, public API contract)?
+4. Break the task into **1-5 atomic sub-tasks**. Each sub-task ≤ 200 lines of expected diff scope.
+5. For each sub-task output:
    - `id`: t1, t2, ...
-   - `goal`: 1 câu (imperative, đo được)
-   - `files_likely_touched`: list path dự đoán (best-effort)
-   - `acceptance`: cách verify done (test command / manual check)
+   - `goal`: one sentence (imperative, measurable)
+   - `files_likely_touched`: list of predicted paths (best-effort)
+   - `acceptance`: how to verify it's done (test command / manual check)
    - `risk_tag`: `low` | `medium` | `high` (hard gate = high)
+   - `skills`: (optional) which Claude Code skill(s) OpenCode should use for this sub-task. OpenCode (≥1.15) natively discovers global skills under `~/.claude/skills` (including the Mobio `be-*` set) → it can invoke them via its skill tool while executing. Only tag **instruction-only** skills (e.g. `be-logging-convention`, `be-databases`, convention skills) — do NOT tag orchestration skills that need Claude-Code-only tools (AskUserQuestion / Task subagents / the Skill tool / `/opencode-plugin-cc:*` commands), because OpenCode runs headless and cannot use them. Leave empty if no skill fits.
 
 ## Output format
 
@@ -31,8 +32,9 @@ Bạn là Claude Code. User có task muốn OpenCode (free-model executor) thự
 
 - **t1**: <goal>
   - files: `src/foo.js`, `src/bar.js`
-  - acceptance: `npm test src/foo.test.js` pass + `git diff` review
+  - acceptance: `npm test src/foo.test.js` passes + `git diff` review
   - risk: low
+  - skills: `be-logging-convention`  *(optional — OpenCode invokes it while executing)*
 
 - **t2**: <goal>
   - ...
@@ -45,15 +47,16 @@ Bạn là Claude Code. User có task muốn OpenCode (free-model executor) thự
 
 ### Next
 
-- `/opencode-plugin-cc:oc-exec t1` để delegate task t1 sang OpenCode
-- `/opencode-plugin-cc:oc-exec all` để delegate tuần tự tất cả (tự động skip high risk, hỏi user trước)
+- `/opencode-plugin-cc:oc-exec t1` to delegate task t1 to OpenCode
+- `/opencode-plugin-cc:oc-exec all` to delegate all sequentially (auto-skips high risk, asks the user first)
 ```
 
-> **QUAN TRỌNG — namespace lệnh.** Mọi lệnh gợi ý cho user PHẢI ở dạng đầy đủ `/opencode-plugin-cc:oc-*` (vd `/opencode-plugin-cc:oc-exec t1`). Bare `/oc-*` KHÔNG phải slash command hợp lệ trong Claude Code — user gõ sẽ bị "Unknown command". Áp dụng cho mọi output gợi ý bên dưới.
+> **IMPORTANT — command namespace.** Every command you suggest to the user MUST use the full form `/opencode-plugin-cc:oc-*` (e.g. `/opencode-plugin-cc:oc-exec t1`). The bare `/oc-*` is NOT a valid slash command in Claude Code — typing it returns "Unknown command". This applies to all suggested output below.
 
 ## Constraints
 
-- KHÔNG execute hay edit file ở `/oc-plan` — chỉ plan.
-- High-risk task → trong output add note "REQUIRES USER APPROVAL trước khi `/opencode-plugin-cc:oc-exec`".
-- Nếu task user gửi quá lớn (dự đoán > 5 sub-task) → đề xuất chia nhỏ qua `/be-plan` trước.
-- Nếu repo có hard gate detect được trong CLAUDE.md → mention explicit trong risk summary.
+- DO NOT execute or edit files in `/oc-plan` — plan only.
+- High-risk task → add a note in the output: "REQUIRES USER APPROVAL before `/opencode-plugin-cc:oc-exec`".
+- If the task is too large (predicted > 5 sub-tasks) → suggest breaking it down with `/be-plan` first.
+- If the repo has a detectable hard gate in CLAUDE.md → mention it explicitly in the risk summary.
+- `skills`: only tag genuinely relevant + instruction-only skills. Don't over-tag (each skill OpenCode loads costs context). Project-local skills (`<cwd>/.claude/skills/`) require `/opencode-plugin-cc:oc-skills sync` to become available — `/opencode-plugin-cc:oc-exec` auto-syncs them.

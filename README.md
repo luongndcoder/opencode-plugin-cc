@@ -4,14 +4,17 @@ Claude Code plugin to orchestrate [anomalyco/opencode](https://github.com/anomal
 
 Inspired by [openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc) (Claude Code ↔ Codex), this plugin wires CC ↔ OpenCode so Claude takes the architect / reviewer role (high quality) while OpenCode does the implementation grunt-work. Pick the executor model with `/oc-model`: a free model, or a paid **OpenCode Zen** model (`opencode-go/*`) — Zen pricing is low enough that **Claude Pro (plan) + OpenCode Zen (execute)** still costs far less than having Claude write all the code itself.
 
-> **Status:** v0.4.0. End-to-end verified against `opencode` 1.15.x (NDJSON output parsing). Zero runtime npm deps. On first run you pick the executor model via `/oc-model` — free **or** paid OpenCode Zen (saved per project; auto-pick stays free-only). Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
+> **Status:** v0.5.0. End-to-end verified against `opencode` 1.15.x (NDJSON output parsing). Zero runtime npm deps. Onboarding order is **install → pick model → plan → exec → verify**. On first run you pick the executor model via `/oc-model` — free **or** paid OpenCode Zen (saved per project; auto-pick stays free-only). OpenCode can use your Claude Code skills (`~/.claude/skills` discovered natively; project-local skills bridged via `/oc-skills`). Commands are namespaced (`/opencode-plugin-cc:oc-*`). `/oc-install` bootstraps opencode if missing. Still early — validate on your own tasks before relying on it.
 
 ## Why
 
-`/oc-plan` → `/oc-exec` → `/oc-verify` workflow:
+Two phases — **setup once**, then the repeatable loop:
 
-- **Plan:** Claude Code reads task + repo context, breaks into atomic sub-tasks with risk tags.
-- **Exec:** Each sub-task forwarded to OpenCode CLI via a subprocess bridge. OpenCode runs the chosen model (free or paid Zen) and returns a structured diff.
+1. **Setup:** `/oc-install` (get opencode) → `/oc-model` (pick the executor model).
+2. **Loop:** `/oc-plan` → `/oc-exec` → `/oc-verify`.
+
+- **Plan:** Claude Code reads task + repo context, breaks into atomic sub-tasks with risk tags (and optionally tags which Claude Code skills the executor should use).
+- **Exec:** Each sub-task forwarded to OpenCode CLI via a subprocess bridge. OpenCode runs the chosen model (free or paid Zen), can invoke your Claude Code skills, and returns a structured diff.
 - **Verify:** A Claude Code reviewer subagent inspects the diff (correctness / scope / security / Mobio rules), then a test/lint gate runs. If reviewer rejects, CC re-delegates with feedback — bounded retry.
 
 Net effect: pay Claude tokens only for planning + review, save Claude tokens on grunt edits.
@@ -52,50 +55,73 @@ Quick verify:
 ```bash
 opencode --version           # should report >= 1.2.0  (or run /opencode-plugin-cc:oc-install)
 node scripts/cli.mjs --help  # CLI usage
-npm test                     # 66/66 unit tests (Node's built-in runner, no deps)
+npm test                     # 75/75 unit tests (Node's built-in runner, no deps)
 ```
 
 ## Commands
 
 > **Invoke with the plugin namespace.** Claude Code registers these as namespaced commands — type `/opencode-plugin-cc:oc-exec` (tip: type `/oc` then press **Tab**). The bare `/oc-exec` is **not** a valid slash command and returns "Unknown command". The names below are shown unprefixed for brevity.
 
-| Command       | Purpose                                                                       |
-| ------------- | ----------------------------------------------------------------------------- |
-| `/oc-install` | Detect & install (or upgrade) `opencode` for your OS — asks before running    |
-| `/oc-model`   | List opencode models (free + paid Zen, with cost) and pick one (saved per project) |
-| `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
-| `/oc-exec`    | Delegate one or all planned tasks to OpenCode, with reviewer + retry gate     |
-| `/oc-verify`  | Run repo's test + lint after `/oc-exec`; re-delegate on failure if you choose |
-| `/oc-cancel`  | Cancel the currently-running `/oc-exec` via PID file in cwd                   |
-| `/oc-status`  | (v2 placeholder) Background job polling                                       |
-| `/oc-result`  | (v2 placeholder) Fetch background job result                                  |
+Run them in this order — setup first, then the loop:
 
-Typical session:
+| #   | Command       | Purpose                                                                       |
+| --- | ------------- | ----------------------------------------------------------------------------- |
+| 1   | `/oc-install` | Detect & install (or upgrade) `opencode` for your OS — asks before running    |
+| 2   | `/oc-model`   | List opencode models (free + paid Zen, with cost) and pick one (saved per project) |
+| 3   | `/oc-skills`  | (optional) Bridge your Claude Code skills into OpenCode — list / sync / clean  |
+| 4   | `/oc-plan`    | Claude Code drafts an atomic task list from your prompt + repo context        |
+| 5   | `/oc-exec`    | Delegate one or all planned tasks to OpenCode, with reviewer + retry gate     |
+| 6   | `/oc-verify`  | Run repo's test + lint after `/oc-exec`; re-delegate on failure if you choose |
+| —   | `/oc-cancel`  | Cancel the currently-running `/oc-exec` via PID file in cwd                   |
+| —   | `/oc-status`  | (v2 placeholder) Background job polling                                       |
+| —   | `/oc-result`  | (v2 placeholder) Fetch background job result                                  |
+
+Typical session (first time in a repo) — setup, then loop:
 
 ```
-/opencode-plugin-cc:oc-plan add hello function with unit test in src/lib/
+# ── setup (once) ───────────────────────────────────────────
+/opencode-plugin-cc:oc-install
+→ checks opencode; if missing, asks consent then installs for your OS
 
-→ CC outputs t1: add hello fn, t2: add unit test
+/opencode-plugin-cc:oc-model
+→ lists free + paid Zen models with cost → you pick one → saved to
+  <cwd>/.opencode-plugin/config.json
+
+# ── loop (repeat per task) ─────────────────────────────────
+/opencode-plugin-cc:oc-plan add hello function with unit test in src/lib/
+→ CC outputs t1: add hello fn, t2: add unit test (each may tag relevant skills)
 
 /opencode-plugin-cc:oc-exec all
-
-→ CC builds prompt → invokes scripts/cli.mjs subprocess
-→ OpenCode executes t1 with free model, returns diff
-→ Reviewer subagent verifies diff (passes)
-→ Same for t2
-→ Summary printed
+→ CC bridges project-local skills (if any) → builds prompt → invokes
+  scripts/cli.mjs subprocess
+→ OpenCode executes t1 with your chosen model (may invoke be-* skills), returns diff
+→ Reviewer subagent verifies diff (passes) → same for t2 → summary printed
 
 /opencode-plugin-cc:oc-verify
-
-→ Detects `npm test` from package.json → runs → green
-→ Tells you it's commit-ready
+→ Detects `npm test` from package.json → runs → green → commit-ready
 ```
+
+> First `/opencode-plugin-cc:oc-exec` with **no saved model** runs the `/oc-model`
+> picker inline before executing, so you can skip step 2 and let exec prompt you.
 
 ## Configuration
 
 - **OpenCode model selection:** model quality varies, so **on the first `/oc-exec` the plugin lists the available models — free and paid OpenCode Zen (`opencode-go/*`) with per-1M-token cost — and asks you to pick one** (run `/opencode-plugin-cc:oc-model` any time to choose / change; picking a paid model shows its cost first). Your choice is saved per project in `<cwd>/.opencode-plugin/config.json` (`{"model": "..."}`) and reused on every later run — no repeat prompt. Resolution precedence: explicit `--model <provider>/<name>` (also persisted) → saved config → **auto-pick is free-only** (`cost.input` and `cost.output` both `0`) so the plugin never spends money without an explicit choice. The model actually used is logged to stderr + a `model_selected` trace event (with `source`: flag/config/auto).
 - **Trace log:** every `/oc-exec` appends to `<cwd>/.opencode-plugin/trace.jsonl` with `traceId`, attempt, status, duration, model, exit code, error. Use this to audit cost and reliability.
 - **Retry budget:** default 2 retries inside the bridge (transient errors) + up to 2 reviewer-driven retries at CC level. Adjust via `--max-retry` to CLI.
+
+## Using your Claude Code skills in OpenCode
+
+OpenCode (≥ 1.15) **natively discovers skills** from three global roots: `~/.claude/skills`, `~/.agents/skills`, `~/.config/opencode/skills`. So your **global** Claude Code skills — including the Mobio `be-*` set in `~/.claude/skills` — are already available to the OpenCode executor with no setup. During `/oc-exec`, the build agent can invoke them via its skill tool.
+
+Two layers wire this into the workflow:
+
+- **Inject (which skill to use):** `/oc-plan` can tag each sub-task with the relevant skill(s); `/oc-exec` passes them into the OpenCode prompt (`Skills khả dụng: …`) so the executor knows to invoke them. Claude picks **instruction-only** skills per task (e.g. `be-logging-convention`, `be-databases`) and avoids skills that need Claude-Code-only tools (`AskUserQuestion`, Task subagents, the Skill tool, `/opencode-plugin-cc:*` commands) — those can't run in OpenCode's headless mode.
+- **Sync (project-local skills):** OpenCode does **not** discover project-local `<cwd>/.claude/skills/`. `/oc-skills sync` (also auto-run by `/oc-exec`) symlinks them into `~/.config/opencode/skills/` so OpenCode sees them, recording a manifest. It never clobbers a name that already exists globally (reported as a collision and skipped). Remove the bridge with `/oc-skills clean` when you're done — `clean` only removes symlinks the plugin created.
+
+Use `/opencode-plugin-cc:oc-skills list` to see exactly what OpenCode discovers and which project-local skills are unbridged.
+
+> Synced project skills live in OpenCode's **global** skill dir until you `clean` them — they're harmless symlinks, but run `/oc-skills clean` to keep that dir tidy across projects.
 
 ## Privacy warning
 
@@ -156,7 +182,7 @@ Key constraints:
 ## Development
 
 ```bash
-npm test                  # 66 unit tests (node:test)
+npm test                  # 75 unit tests (node:test)
 npm run test:coverage     # coverage report (experimental)
 ```
 

@@ -4,8 +4,8 @@ description: [v2 placeholder] Fetch result of background OpenCode job.
 
 # /oc-result — Not implemented in MVP
 
-Lệnh này dành cho v2 (background job queue).
+This command is reserved for v2 (background job queue).
 
-MVP hiện tại: kết quả `/oc-exec` trả về **inline** ngay trong session. Nếu cần fetch result cũ, xem `<cwd>/.opencode-plugin/trace.jsonl`.
+Current MVP: `/oc-exec` returns its result **inline** in the session. To fetch a past result, read `<cwd>/.opencode-plugin/trace.jsonl`.
 
-Args: `$ARGUMENTS` (sẽ là `<job-id>` ở v2).
+Args: `$ARGUMENTS` (will be `<job-id>` in v2).
