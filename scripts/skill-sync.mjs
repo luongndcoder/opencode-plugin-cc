@@ -138,7 +138,7 @@ export function listProjectSkills(cwd, { fs = defaultFs } = {}) {
 }
 
 /**
- * Compute what a sync would do — pure inspection, no writes.
+ * Compute what a sync would do - pure inspection, no writes.
  * @returns {{ target, projectDir, toLink: {name,src,dest}[], collisions: string[], already: string[] }}
  */
 export function planSync(cwd, { fs = defaultFs, env = process.env } = {}) {

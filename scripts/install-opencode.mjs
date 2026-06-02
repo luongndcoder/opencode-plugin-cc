@@ -2,7 +2,7 @@
 //
 // This module ONLY produces an install *plan* (which commands are viable given
 // the OS + available package managers). It deliberately does NOT run the
-// install itself — the /oc-install skill shows the plan, asks the user for
+// install itself - the /oc-install skill shows the plan, asks the user for
 // consent, then runs the chosen command via Bash. Keeping the side effect out
 // of here makes the planner pure + unit-testable and avoids silently piping a
 // remote script into a shell.
@@ -17,7 +17,7 @@ const CATALOG = [
     requires: 'brew',
     platforms: ['darwin', 'linux'],
     cmd: 'brew install anomalyco/tap/opencode',
-    label: 'Homebrew (anomalyco tap — most up-to-date)',
+    label: 'Homebrew (anomalyco tap - most up-to-date)',
     needsSudo: false,
   },
   {
@@ -25,7 +25,7 @@ const CATALOG = [
     requires: 'curl',
     platforms: ['darwin', 'linux'],
     cmd: 'curl -fsSL https://opencode.ai/install | bash',
-    label: 'Official install script (curl | bash) — no Node/Go needed',
+    label: 'Official install script (curl | bash) - no Node/Go needed',
     needsSudo: false,
   },
   {
@@ -49,7 +49,7 @@ const CATALOG = [
     requires: 'choco',
     platforms: ['win32'],
     cmd: 'choco install opencode',
-    label: 'Chocolatey (Windows — run shell as admin)',
+    label: 'Chocolatey (Windows - run shell as admin)',
     needsSudo: false,
   },
 ]
@@ -72,7 +72,7 @@ const MANUAL = {
  *
  * @param {{platform: string, has?: Record<string, boolean>}} opts
  *   platform: Node `process.platform` value ('darwin' | 'linux' | 'win32' | ...).
- *   has: map of package-manager command name → whether it exists on PATH.
+ *   has: map of package-manager command name -> whether it exists on PATH.
  * @returns {{platform, recommended, available, unavailable, manual}}
  */
 export function detectInstallPlan({ platform, has = {} }) {

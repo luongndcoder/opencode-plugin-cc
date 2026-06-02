@@ -79,7 +79,7 @@ export async function invoke({
     throw new Error('invoke: `cwd` is required (string)')
   }
 
-  // Pre-check: signal already aborted → bail before spawn
+  // Pre-check: signal already aborted -> bail before spawn
   if (signal?.aborted) {
     throw new OpencodeAbortedError('aborted before spawn')
   }
@@ -102,7 +102,7 @@ export async function invoke({
       try {
         child.kill('SIGTERM')
       } catch {
-        // ignore — child may already be dead
+        // ignore - child may already be dead
       }
       reject(new OpencodeTimeoutError(`opencode timed out after ${timeoutMs}ms`))
     }, timeoutMs)

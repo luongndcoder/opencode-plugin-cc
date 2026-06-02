@@ -16,14 +16,14 @@ function makeBridge(scenarios) {
   })
 }
 
-test('run: first call success — no retry', async () => {
+test('run: first call success - no retry', async () => {
   const bridge = makeBridge([{ session_id: 's1', status: 'completed', result: { diff: 'd' } }])
   const result = await run({ prompt: 'x', cwd: '/tmp', invoke: bridge })
   assert.equal(result.session_id, 's1')
   assert.equal(bridge.mock.calls.length, 1)
 })
 
-test('run: fail then success — retry 1 + feedback injected into prompt', async () => {
+test('run: fail then success - retry 1 + feedback injected into prompt', async () => {
   const bridge = makeBridge([
     new OpencodeProcessError('exit 1: build error', 1, 'build error'),
     { session_id: 's2', status: 'completed', result: { diff: 'd' } },
@@ -36,7 +36,7 @@ test('run: fail then success — retry 1 + feedback injected into prompt', async
   assert.match(secondCall.prompt, /build error/)
 })
 
-test('run: fail 3 times → RetryExhaustedError with history of 3', async () => {
+test('run: fail 3 times -> RetryExhaustedError with history of 3', async () => {
   const bridge = makeBridge([
     new OpencodeProcessError('err 1', 1, ''),
     new OpencodeProcessError('err 2', 1, ''),
@@ -52,7 +52,7 @@ test('run: fail 3 times → RetryExhaustedError with history of 3', async () => 
   )
 })
 
-test('run: OpencodeNotInstalledError → bail-out, no retry', async () => {
+test('run: OpencodeNotInstalledError -> bail-out, no retry', async () => {
   const bridge = makeBridge([new OpencodeNotInstalledError('not installed')])
   await assert.rejects(
     () => run({ prompt: 'x', cwd: '/tmp', invoke: bridge }),
@@ -61,7 +61,7 @@ test('run: OpencodeNotInstalledError → bail-out, no retry', async () => {
   assert.equal(bridge.mock.calls.length, 1)
 })
 
-test('run: OpencodeTimeoutError → bail-out, no retry', async () => {
+test('run: OpencodeTimeoutError -> bail-out, no retry', async () => {
   const bridge = makeBridge([new OpencodeTimeoutError('5min')])
   await assert.rejects(
     () => run({ prompt: 'x', cwd: '/tmp', invoke: bridge }),
@@ -70,7 +70,7 @@ test('run: OpencodeTimeoutError → bail-out, no retry', async () => {
   assert.equal(bridge.mock.calls.length, 1)
 })
 
-test('run: reviewer reject → retry with reviewer comment in feedback', async () => {
+test('run: reviewer reject -> retry with reviewer comment in feedback', async () => {
   const bridge = makeBridge([
     { session_id: 's1', status: 'completed', result: { diff: 'diff v1' } },
     { session_id: 's2', status: 'completed', result: { diff: 'diff v2' } },

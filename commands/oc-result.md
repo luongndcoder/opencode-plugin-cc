@@ -2,7 +2,7 @@
 description: [v2 placeholder] Fetch result of background OpenCode job.
 ---
 
-# /oc-result — Not implemented in MVP
+# /oc-result - Not implemented in MVP
 
 This command is reserved for v2 (background job queue).
 

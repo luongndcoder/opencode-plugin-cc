@@ -67,7 +67,7 @@ test('normalizeOutput: edit tool produces old/new diff + files_changed', () => {
   assert.match(out.result.diff, /\+ bar/)
 })
 
-test('normalizeOutput: text-only run (no tool) → diff null, message set', () => {
+test('normalizeOutput: text-only run (no tool) -> diff null, message set', () => {
   const stream = [
     JSON.stringify({ type: 'step_start', sessionID: 'ses_t', part: {} }),
     JSON.stringify({ type: 'text', sessionID: 'ses_t', part: { text: 'No changes needed.' } }),

@@ -26,12 +26,12 @@ export function createCancelHandler({
     try {
       abortController.abort()
     } catch {
-      // ignore — already aborted
+      // ignore - already aborted
     }
     try {
       fs.unlinkSync(pidFile)
     } catch {
-      // ignore — already removed
+      // ignore - already removed
     }
     const exitCode = signal === 'SIGINT' ? 130 : 143
     proc.exit(exitCode)

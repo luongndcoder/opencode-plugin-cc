@@ -53,9 +53,9 @@ const maxRetry = values['max-retry'] ? Number.parseInt(values['max-retry'], 10) 
 const timeoutMs = values.timeout ? Number.parseInt(values.timeout, 10) : undefined
 
 // Resolve the model BEFORE spawning the exec run. Precedence:
-//   1. explicit concrete `--model provider/model` → use it + persist as project default.
-//   2. saved choice in <cwd>/.opencode-plugin/config.json (set via /oc-model) → use it.
-//   3. `free` / `auto` / omitted + no saved choice → auto-pick a free model (fallback).
+//   1. explicit concrete `--model provider/model` -> use it + persist as project default.
+//   2. saved choice in <cwd>/.opencode-plugin/config.json (set via /oc-model) -> use it.
+//   3. `free` / `auto` / omitted + no saved choice -> auto-pick a free model (fallback).
 const AUTO_MODEL = new Set(['free', 'auto', ''])
 let model
 let modelSource

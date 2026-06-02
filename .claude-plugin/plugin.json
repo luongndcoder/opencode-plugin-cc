@@ -1,7 +1,7 @@
 {
   "name": "opencode-plugin-cc",
   "version": "0.5.0",
-  "description": "Orchestrate anomalyco/opencode from Claude Code — CC plans + reviews, OpenCode executes with free or paid Zen models, and can use your Claude Code skills",
+  "description": "Orchestrate anomalyco/opencode from Claude Code - CC plans + reviews, OpenCode executes with free or paid Zen models, and can use your Claude Code skills",
   "author": {
     "name": "luongnd",
     "email": "luongnd@mobio.io"

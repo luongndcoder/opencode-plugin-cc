@@ -1,7 +1,7 @@
 // Zero-dependency validator for the normalized opencode result object.
 //
 // Rules mirror schemas/opencode-output.json (kept as documentation). Hand-rolled
-// instead of using Ajv so the plugin has NO runtime npm dependencies — a user
+// instead of using Ajv so the plugin has NO runtime npm dependencies - a user
 // who installs via `/plugin marketplace add` gets a clone with no node_modules,
 // and Claude Code does not run `npm install` for plugins. Keep it that way.
 
@@ -26,7 +26,7 @@ export function validate(obj) {
     })
   }
 
-  // required: status ∈ enum
+  // required: status in enum
   if (!VALID_STATUS.has(obj.status)) {
     errors.push({
       instancePath: '/status',
@@ -44,6 +44,6 @@ export function validate(obj) {
     errors.push({ instancePath: '/error', message: 'error must be a string or null' })
   }
 
-  // additionalProperties allowed (forward-compat) — no extra-key check.
+  // additionalProperties allowed (forward-compat) - no extra-key check.
   return { valid: errors.length === 0, errors: errors.length ? errors : null }
 }

@@ -30,7 +30,7 @@ test('readModel: returns null when no config exists', () => {
   assert.equal(readModel('/repo', { fs }), null)
 })
 
-test('writeModel → readModel round-trips the chosen model', () => {
+test('writeModel -> readModel round-trips the chosen model', () => {
   const fs = memFs()
   writeModel('/repo', 'opencode/minimax-m3-free', { fs })
   assert.equal(readModel('/repo', { fs }), 'opencode/minimax-m3-free')

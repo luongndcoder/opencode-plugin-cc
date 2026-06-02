@@ -2,7 +2,7 @@
 description: Cancel the currently-running /oc-exec by signaling the active PID. Reads <cwd>/.opencode-plugin/active.pid.
 ---
 
-# /oc-cancel — Cancel running OpenCode task
+# /oc-cancel - Cancel running OpenCode task
 
 Use this when an `/oc-exec` task is stuck, too slow, or you changed your mind.
 
@@ -16,20 +16,20 @@ Use this when an `/oc-exec` task is stuck, too slow, or you changed your mind.
    ```bash
    PID_FILE="${CWD}/.opencode-plugin/active.pid"
    ```
-   If file missing → tell user "No active /oc-exec task found in this directory." and stop.
+   If file missing -> tell user "No active /oc-exec task found in this directory." and stop.
 
 2. **Read PID**:
    ```bash
    PID=$(cat "$PID_FILE" 2>/dev/null)
    ```
-   If empty or non-numeric → tell user "PID file corrupt; manual cleanup may be needed." and stop.
+   If empty or non-numeric -> tell user "PID file corrupt; manual cleanup may be needed." and stop.
 
 3. **Verify alive** (avoid stale-PID kill of wrong process):
    ```bash
    kill -0 "$PID" 2>/dev/null && echo "alive" || echo "stale"
    ```
-   - `stale` → unlink PID file (`rm "$PID_FILE"`), tell user "Stale PID cleaned." and stop.
-   - `alive` → proceed step 4.
+   - `stale` -> unlink PID file (`rm "$PID_FILE"`), tell user "Stale PID cleaned." and stop.
+   - `alive` -> proceed step 4.
 
 4. **Send SIGTERM**:
    ```bash
@@ -41,15 +41,15 @@ Use this when an `/oc-exec` task is stuck, too slow, or you changed your mind.
    ```bash
    sleep 1 && kill -0 "$PID" 2>/dev/null && echo "still alive" || echo "exited"
    ```
-   - `exited` → tell user "✅ /oc-exec cancelled. Trace logged."
-   - `still alive` after 1s → escalate user: "Process did not exit; consider SIGKILL: `kill -9 $PID`". Do NOT auto-SIGKILL.
+   - `exited` -> tell user "/oc-exec cancelled. Trace logged."
+   - `still alive` after 1s -> escalate user: "Process did not exit; consider SIGKILL: `kill -9 $PID`". Do NOT auto-SIGKILL.
 
 ## Constraints
 
-- DO NOT auto-SIGKILL — leave to user (SIGKILL bypasses cleanup, leaves opencode subprocess orphan).
+- DO NOT auto-SIGKILL - leave to user (SIGKILL bypasses cleanup, leaves opencode subprocess orphan).
 - DO NOT cancel processes outside this cwd (each `/oc-exec` instance uses its own PID file per cwd).
 - DO NOT touch other cwds' PID files.
-- If multiple `/oc-exec` ran in parallel from same cwd → PID file overwritten; only newest task tracked. (Sequential is MVP design.)
+- If multiple `/oc-exec` ran in parallel from same cwd -> PID file overwritten; only newest task tracked. (Sequential is MVP design.)
 
 ## Alternative: Ctrl-C in Claude Code
 

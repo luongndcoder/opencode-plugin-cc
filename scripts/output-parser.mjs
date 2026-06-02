@@ -123,7 +123,7 @@ export function normalizeOutput(stdout, { model = null } = {}) {
   }
 
   // Single line: either a pre-normalized result object (test fixtures / legacy)
-  // or one lone event. JSON.parse may throw — the bridge wraps that.
+  // or one lone event. JSON.parse may throw - the bridge wraps that.
   if (lines.length === 1) {
     const obj = JSON.parse(lines[0])
     if (obj && typeof obj === 'object' && obj.type === undefined) {

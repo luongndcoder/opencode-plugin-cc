@@ -109,7 +109,7 @@ test('applySync: symlinks project skill into opencode target + writes manifest',
   }
 })
 
-test('applySync: idempotent — re-apply reports already, no duplicate', () => {
+test('applySync: idempotent - re-apply reports already, no duplicate', () => {
   const s = scaffold()
   try {
     addProjectSkill(s.cwd, 'proj-a')
@@ -122,7 +122,7 @@ test('applySync: idempotent — re-apply reports already, no duplicate', () => {
   }
 })
 
-test('planSync: collision — a foreign skill already owns the name -> skipped, not clobbered', () => {
+test('planSync: collision - a foreign skill already owns the name -> skipped, not clobbered', () => {
   const s = scaffold()
   try {
     addProjectSkill(s.cwd, 'dup')

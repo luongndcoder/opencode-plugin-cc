@@ -16,7 +16,7 @@ const INSTALL_HINT =
   'opencode CLI not found in PATH. Install: https://github.com/anomalyco/opencode (>= v1.2 required).'
 
 // A header line in `opencode models --verbose` is exactly `<provider>/<model>` at column 0.
-// JSON detail lines are indented (col > 0) or are bare braces — none match this anchored regex.
+// JSON detail lines are indented (col > 0) or are bare braces - none match this anchored regex.
 const HEADER_RE = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/
 
 // Sentinels meaning "auto-pick a free model" rather than a concrete provider/model id.
@@ -57,7 +57,7 @@ export function parseVerboseModels(text) {
         context: obj.limit?.context ?? null,
       })
     } catch {
-      // Skip an unparseable block — never let one bad model poison the whole list.
+      // Skip an unparseable block - never let one bad model poison the whole list.
     }
   }
 
@@ -116,7 +116,7 @@ async function listVerbose({ spawn, timeoutMs }) {
       try {
         child.kill('SIGTERM')
       } catch {
-        // ignore — child may already be dead
+        // ignore - child may already be dead
       }
       reject(new OpencodeTimeoutError(`opencode models timed out after ${timeoutMs}ms`))
     }, timeoutMs)
@@ -151,8 +151,8 @@ async function listVerbose({ spawn, timeoutMs }) {
 
 /**
  * Resolve the model string to pass to `opencode run`.
- * - Concrete `provider/model` (anything not in AUTO_SENTINELS) → returned as-is.
- * - `free` / `auto` / empty / undefined → query opencode and auto-pick a free model.
+ * - Concrete `provider/model` (anything not in AUTO_SENTINELS) -> returned as-is.
+ * - `free` / `auto` / empty / undefined -> query opencode and auto-pick a free model.
  *
  * @param {{requested?: string, spawn?: Function, timeoutMs?: number}} opts
  * @returns {Promise<string>} Concrete `<provider>/<model>` id.
@@ -231,7 +231,7 @@ export async function listAllModels({
   })
 }
 
-// CLI: `node scripts/model-selector.mjs --list [--all]` → prints models as JSON.
+// CLI: `node scripts/model-selector.mjs --list [--all]` -> prints models as JSON.
 //   --list        free models only (default)
 //   --list --all  every model (free + paid OpenCode Zen) with cost + `free` flag
 // Used by the /oc-model and /oc-exec skills to build an AskUserQuestion.

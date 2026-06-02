@@ -104,7 +104,7 @@ test('uninstall: removes listeners + unlinks PID file', () => {
   assert.equal(fs._files.size, 0)
 })
 
-test('uninstall: idempotent — second call is no-op', () => {
+test('uninstall: idempotent - second call is no-op', () => {
   const proc = makeFakeProc()
   const fs = makeFakeFs()
   const handler = createCancelHandler({

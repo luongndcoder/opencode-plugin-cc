@@ -68,7 +68,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.exit(2)
     }
     const path = writeModel(cwd, modelArg)
-    process.stdout.write(`saved model ${modelArg} → ${path}\n`)
+    process.stdout.write(`saved model ${modelArg} -> ${path}\n`)
   } else {
     process.stderr.write('usage: node scripts/model-config.mjs get <cwd> | set <cwd> <model>\n')
     process.exit(2)

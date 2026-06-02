@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpencodeOutput",
-  "description": "Schema for `opencode run --format json` output. Permissive — additionalProperties allowed since anomalyco schema may evolve.",
+  "description": "Schema for `opencode run --format json` output. Permissive - additionalProperties allowed since anomalyco schema may evolve.",
   "type": "object",
   "required": ["session_id", "status"],
   "properties": {

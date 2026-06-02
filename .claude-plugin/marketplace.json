@@ -4,12 +4,12 @@
     "name": "luongnd",
     "email": "luongnd@mobio.io"
   },
-  "description": "Self-hosted marketplace for opencode-plugin-cc — Claude Code orchestrating anomalyco/opencode with free models",
+  "description": "Self-hosted marketplace for opencode-plugin-cc - Claude Code orchestrating anomalyco/opencode with free models",
   "plugins": [
     {
       "name": "opencode-plugin-cc",
       "source": "./",
-      "description": "CC plans + reviews, OpenCode executes tasks with a free or cheap paid OpenCode Zen model (pick via /oc-model) and can use your Claude Code skills (/oc-skills). Install → model → plan → exec → verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
+      "description": "CC plans + reviews, OpenCode executes tasks with a free or cheap paid OpenCode Zen model (pick via /oc-model) and can use your Claude Code skills (/oc-skills). Install -> model -> plan -> exec -> verify with reviewer + retry + cancel. /oc-install bootstraps opencode.",
       "version": "0.5.0",
       "author": {
         "name": "luongnd",

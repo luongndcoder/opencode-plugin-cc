@@ -83,7 +83,7 @@ test('pickFree: input==0 but output>0 is NOT free (input-only-free provider)', (
 
 test('pickFree: returns preferred model when several free ones exist', () => {
   const models = parseVerboseModels(VERBOSE_SAMPLE)
-  // big-pickle is first in PREFERENCE → chosen over minimax-m3-free.
+  // big-pickle is first in PREFERENCE -> chosen over minimax-m3-free.
   assert.equal(pickFree(models), 'opencode/big-pickle')
 })
 
@@ -92,7 +92,7 @@ test('pickFree: prefers a tool-capable free model when one exists', () => {
     { id: 'opencode/z-no-tool', cost: { input: 0, output: 0 }, toolcall: false },
     { id: 'opencode/a-tool', cost: { input: 0, output: 0 }, toolcall: true },
   ]
-  // neither is in PREFERENCE → among tool-capable, alphabetical → a-tool
+  // neither is in PREFERENCE -> among tool-capable, alphabetical -> a-tool
   assert.equal(pickFree(models), 'opencode/a-tool')
 })
 
@@ -131,7 +131,7 @@ test('selectFreeModel: undefined requested auto-picks too', async () => {
 test('listFreeModels: returns only free models, preference-ordered, with metadata', async () => {
   const spawn = fakeSpawn({ stdout: VERBOSE_SAMPLE })
   const models = await listFreeModels({ spawn })
-  // VERBOSE_SAMPLE: big-pickle (free), deepseek-v4-flash (input-free/output-paid → NOT free),
+  // VERBOSE_SAMPLE: big-pickle (free), deepseek-v4-flash (input-free/output-paid -> NOT free),
   // minimax-m3-free (free)
   assert.deepEqual(
     models.map((m) => m.id),
